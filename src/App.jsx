@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Toaster, toast } from "react-hot-toast";
 import Header from "./components/Header";
 import MatchList from "./components/MatchList";
 import LeagueTable from "./components/LeagueTable";
@@ -7,7 +8,7 @@ import PlayerProfileModal from "./components/PlayerProfileModal";
 import PlayerSearch from "./components/PlayerSearch";
 import LiveMatchesModal from "./components/LiveMatchesModal";
 import { fetchEspnMatches } from "./api.jsx";
-import { Radio, Calendar, CheckCircle2, Clock } from "lucide-react";
+import { Radio, Calendar, CheckCircle2, Clock, Star } from "lucide-react";
 import "./index.css";
 import SkeletonCard from "./components/SkeletonCard";
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +18,7 @@ function App() {
   // 1. Get our UI state from Zustand
   const {
     selectedLeague, selectedSeason, selectedMatchId, selectedPlayer,
-    activeTab, statusFilter, showLiveModal,
+    activeTab, statusFilter, showLiveModal, favorites,
     setSelectedMatchId, setSelectedPlayer, setActiveTab, setStatusFilter, setShowLiveModal
   } = useAppStore();
 
@@ -33,6 +34,38 @@ function App() {
     const themeClass = `theme-${selectedLeague.replace(".", "")}`;
     document.body.className = themeClass;
   }, [selectedLeague]);
+
+  // Goal Notification Watcher
+  const prevMatchesRef = useRef();
+  useEffect(() => {
+    if (prevMatchesRef.current && matches.length > 0) {
+      matches.forEach(match => {
+        if (match.status === 'live') {
+          const prevMatch = prevMatchesRef.current.find(m => m.id === match.id);
+          if (prevMatch && prevMatch.status === 'live') {
+            const homeScore = parseInt(match.score?.home || 0);
+            const prevHomeScore = parseInt(prevMatch.score?.home || 0);
+            const awayScore = parseInt(match.score?.away || 0);
+            const prevAwayScore = parseInt(prevMatch.score?.away || 0);
+            
+            if (homeScore > prevHomeScore) {
+              toast.success(`GOAL! ${match.homeTeam.name} scored!`, { 
+                icon: '⚽', 
+                style: { background: '#1e1e24', color: '#fff', border: '1px solid var(--accent-primary)' } 
+              });
+            }
+            if (awayScore > prevAwayScore) {
+              toast.success(`GOAL! ${match.awayTeam.name} scored!`, { 
+                icon: '⚽', 
+                style: { background: '#1e1e24', color: '#fff', border: '1px solid var(--accent-secondary)' } 
+              });
+            }
+          }
+        }
+      });
+    }
+    prevMatchesRef.current = matches;
+  }, [matches]);
 
   // Derive the active match dynamically
   const activeMatch = matches.find((m) => m.id === selectedMatchId);
@@ -54,8 +87,13 @@ function App() {
     return matches.filter((m) => m.status === "finished").length;
   }, [matches]);
 
+  const favoriteMatches = useMemo(() => {
+    return matches.filter((m) => favorites?.includes(m.id));
+  }, [matches, favorites]);
+
   return (
     <div className="app-container">
+      <Toaster position="top-right" reverseOrder={false} />
       <Header
         liveCount={liveMatchesCount}
         totalCount={matches.length}
@@ -124,6 +162,27 @@ function App() {
 
                 <MatchList
                   matches={filteredMatches}
+                  onMatchClick={(match) => setSelectedMatchId(match.id)}
+                />
+              </div>
+            )}
+
+            {activeTab === "favorites" && (
+              <div className="content-layout">
+                <div className="filter-pills-bar">
+                  <div className="filter-pills-group">
+                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontSize: '1.2rem' }}>
+                      <Star size={20} fill="#ffd700" color="#ffd700" /> 
+                      My Favorite Matches
+                    </h2>
+                  </div>
+                  <div className="match-results-counter">
+                    Showing <span>{favoriteMatches.length}</span> saved matches
+                  </div>
+                </div>
+
+                <MatchList
+                  matches={favoriteMatches}
                   onMatchClick={(match) => setSelectedMatchId(match.id)}
                 />
               </div>

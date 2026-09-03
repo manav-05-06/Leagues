@@ -1,7 +1,11 @@
 import React from 'react';
-import { Trophy, Radio, Clock, CheckCircle2 } from 'lucide-react';
+import { Trophy, Radio, Clock, CheckCircle2, Shield, Star } from 'lucide-react';
+import { useAppStore } from '../store';
 
 export default function MatchCard({ match, onClick }) {
+  const { favorites, toggleFavorite } = useAppStore();
+  const isFavorite = favorites.includes(match.id);
+
   const isLive = match.status === 'live';
   const isFinished = match.status === 'finished';
 
@@ -31,6 +35,21 @@ export default function MatchCard({ match, onClick }) {
         <div className="league-info">
           <Trophy size={14} color="var(--accent-primary)" />
           <span>{match.league}</span>
+          
+          <button 
+            className="favorite-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(match.id);
+            }}
+            style={{ 
+              background: 'none', border: 'none', cursor: 'pointer', 
+              color: isFavorite ? '#ffd700' : 'var(--text-muted)',
+              marginLeft: '8px', display: 'flex', alignItems: 'center'
+            }}
+          >
+            <Star size={16} fill={isFavorite ? '#ffd700' : 'none'} />
+          </button>
         </div>
         <div className={`match-status-badge ${statusClass}`}>
           {statusIcon}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader, User, Trophy, Globe, Briefcase, Shield, Sparkles } from 'lucide-react';
 import { fetchPlayerProfile, fetchPlayerSeasonStats } from '../api.jsx';
 import './PlayerProfileModal.css';
+import './FutCard.css';
 import { BarChart,Bar,XAxis,Tooltip,ResponsiveContainer,Cell } from 'recharts';
 
 export default function PlayerProfileModal({ playerId, teamId, leagueSlug, season, onClose }) {
@@ -124,45 +125,44 @@ export default function PlayerProfileModal({ playerId, teamId, leagueSlug, seaso
 
     return (
       <div className="fut-card-container">
-        {/* Holographic Card Header & Frame */}
-        <div className="fut-card-header">
-          <div className="fut-card-rating-group">
-            <span className="fut-rating-number">{ovrRating}</span>
-            <span className="fut-pos-badge">{posAbbrev}</span>
-            {flag && <img src={flag} alt={nationality || 'Nation'} className="fut-nation-flag" />}
+        <div className="fut-card">
+          <div className="fut-card-header">
+            <div className="fut-rating">
+              <span>{ovrRating}</span>
+              <span className="fut-position">{posAbbrev}</span>
+            </div>
+            <div className="fut-player-image-wrapper">
+              {headshot ? (
+                <img src={headshot} alt={name} className="fut-player-image" />
+              ) : (
+                <div style={{width:'100%', height:'100%', display:'flex', justifyContent:'center', alignItems:'center'}}>
+                  <User size={100} color="rgba(255,255,255,0.5)" />
+                </div>
+              )}
+            </div>
           </div>
-
-          <div className="fut-headshot-box">
-            {headshot ? (
-              <img src={headshot} alt={name} className="fut-headshot-img" />
-            ) : (
-              <div className="fut-headshot-placeholder"><User size={60} /></div>
-            )}
-          </div>
-        </div>
-
-        {/* Player Name & Team Shield */}
-        <div className="fut-name-section">
-          <h2 className="fut-player-name">{name}</h2>
-          <div className="fut-team-bar">
-            {profile.jersey && <span className="fut-jersey-num">#{profile.jersey}</span>}
-            <span className="fut-team-name">{team}</span>
-          </div>
-        </div>
-
-        {/* Tactical Pitch & Player Attributes Grid */}
-        <div className="fut-attributes-grid">
-          <div className="fut-attr-card">
-            <span className="attr-label">NAT</span>
-            <span className="attr-value">{nationality ? nationality.slice(0, 3).toUpperCase() : 'INT'}</span>
-          </div>
-          <div className="fut-attr-card">
-            <span className="attr-label">AGE</span>
-            <span className="attr-value">{age || '26'}</span>
-          </div>
-          <div className="fut-attr-card">
-            <span className="attr-label">POS</span>
-            <span className="attr-value">{posAbbrev}</span>
+          
+          <div className="fut-card-body">
+            <div className="fut-name">{name}</div>
+            <div className="fut-divider"></div>
+            <div className="fut-stats-grid">
+              <div className="fut-stat-row">
+                <span className="fut-stat-val">{goals}</span>
+                <span className="fut-stat-label">GLS</span>
+              </div>
+              <div className="fut-stat-row">
+                <span className="fut-stat-val">{assists}</span>
+                <span className="fut-stat-label">AST</span>
+              </div>
+              <div className="fut-stat-row">
+                <span className="fut-stat-val">{shots}</span>
+                <span className="fut-stat-label">SHT</span>
+              </div>
+              <div className="fut-stat-row">
+                <span className="fut-stat-val">{saves}</span>
+                <span className="fut-stat-label">SAV</span>
+              </div>
+            </div>
           </div>
         </div>
 

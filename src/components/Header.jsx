@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Search, Activity, Radio, Calendar, Table2 } from 'lucide-react';
+import { Trophy, Search, Activity, Radio, Calendar, Table2, Star } from 'lucide-react';
 import { useAppStore } from '../store';
 
 const LEAGUES = [
@@ -97,6 +97,12 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
             onClick={() => setActiveTab('search')}
           >
             <Search size={18} /> Player Scout (FUT)
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+            onClick={() => setActiveTab('favorites')}
+          >
+            <Star size={18} /> My Favorites
           </button>
         </div>
 

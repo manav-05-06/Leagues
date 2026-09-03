@@ -284,43 +284,63 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
           </div>
         </div>
         
-        {/* Match Goals & Scorers Bar */}
-        {match.details && match.details.some(d => d.scoringPlay) && (
-          <div className="match-goals-container">
-            <div className="match-goals-column">
-              {match.details.filter(g => g.scoringPlay && g.team?.id === match.homeTeamId).map((g, i) => {
-                const athlete = g.athletesInvolved?.[0];
+        {/* Match Event Timeline */}
+        {match.details && match.details.length > 0 && (
+          <div className="match-timeline-container">
+            <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
+              <Timer size={18} color="var(--accent-primary)" /> <span>Match Timeline</span>
+            </h3>
+            <div className="timeline-vertical">
+              {match.details
+                .filter(d => d.scoringPlay || d.redCard || d.yellowCard)
+                .map((event, i) => {
+                const isHome = event.team?.id === match.homeTeamId;
+                const athlete = event.athletesInvolved?.[0];
+                const time = event.clock?.displayValue || "?'";
+                
+                let icon = '';
+                let className = '';
+                if (event.scoringPlay) { icon = '⚽'; className = 'timeline-goal'; }
+                else if (event.redCard) { icon = ''; className = 'timeline-red'; }
+                else if (event.yellowCard) { icon = ''; className = 'timeline-yellow'; }
+                
+                if (!className) return null;
+
                 return (
-                  <div key={i} className="goal-event">
-                    <span className="goal-icon">⚽</span>
-                    <span 
-                      className={athlete?.id ? "clickable-player goal-player" : "goal-player"} 
-                      onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, g.team.id, match.leagueSlug)}
-                    >
-                      {athlete?.shortName || athlete?.displayName || 'Goal'}
-                    </span> 
-                    <span className="goal-time">{g.clock?.displayValue}</span>
-                    {g.ownGoal && <span className="goal-meta">(OG)</span>}
-                    {g.penaltyKick && <span className="goal-meta">(PEN)</span>}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="match-goals-column right">
-              {match.details.filter(g => g.scoringPlay && g.team?.id === match.awayTeamId).map((g, i) => {
-                const athlete = g.athletesInvolved?.[0];
-                return (
-                  <div key={i} className="goal-event">
-                    <span className="goal-time">{g.clock?.displayValue}</span> 
-                    <span 
-                      className={athlete?.id ? "clickable-player goal-player" : "goal-player"} 
-                      onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, g.team.id, match.leagueSlug)}
-                    >
-                      {athlete?.shortName || athlete?.displayName || 'Goal'}
-                    </span>
-                    <span className="goal-icon">⚽</span>
-                    {g.ownGoal && <span className="goal-meta">(OG)</span>}
-                    {g.penaltyKick && <span className="goal-meta">(PEN)</span>}
+                  <div key={i} className={`timeline-row ${isHome ? 'home-event' : 'away-event'}`}>
+                    {isHome ? (
+                      <>
+                        <div className="timeline-content left">
+                          {event.ownGoal && <span className="goal-meta">(OG)</span>}
+                          {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
+                          <span 
+                            className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                            onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
+                          >
+                            {athlete?.shortName || athlete?.displayName || 'Unknown'}
+                          </span>
+                        </div>
+                        <div className={`timeline-icon ${className}`}>{icon}</div>
+                        <div className="timeline-time">{time}</div>
+                        <div className="timeline-content right"></div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="timeline-content left"></div>
+                        <div className="timeline-time">{time}</div>
+                        <div className={`timeline-icon ${className}`}>{icon}</div>
+                        <div className="timeline-content right">
+                          <span 
+                            className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                            onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
+                          >
+                            {athlete?.shortName || athlete?.displayName || 'Unknown'}
+                          </span>
+                          {event.ownGoal && <span className="goal-meta">(OG)</span>}
+                          {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })}
