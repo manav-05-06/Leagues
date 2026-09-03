@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy, Search, Activity, Radio, Calendar, Table2 } from 'lucide-react';
+import { useAppStore } from '../store';
 
 const LEAGUES = [
   { id: 'all', name: 'All Leagues', icon: '⚽' },
@@ -8,17 +9,16 @@ const LEAGUES = [
   { id: 'ger.1', name: 'Bundesliga', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/10.png' }
 ];
 
-export default function Header({ 
-  selectedLeague, 
-  onLeagueChange, 
-  selectedSeason, 
-  onSeasonChange, 
-  activeTab, 
-  onTabChange, 
-  onLiveClick,
-  liveCount = 0,
-  totalCount = 0
-}) {
+export default function Header({ liveCount = 0, totalCount = 0 }) {
+  // Pull what we need directly from our Zustand store
+  const { 
+    selectedLeague, setSelectedLeague, 
+    selectedSeason, setSelectedSeason, 
+    activeTab, setActiveTab, 
+    setShowLiveModal 
+  } = useAppStore();
+
+  // ... rest of the component stays exactly the same
   return (
     <header className="header">
       {/* Top Matchday Live Ticker */}
@@ -64,7 +64,7 @@ export default function Header({
             <button
               key={league.id}
               className={`league-btn-badge ${selectedLeague === league.id ? 'active' : ''}`}
-              onClick={() => onLeagueChange(league.id)}
+              onClick={() => setSelectedLeague(league.id)}
             >
               {league.logo ? (
                 <img src={league.logo} alt={league.name} />
@@ -82,19 +82,19 @@ export default function Header({
         <div className="nav-tabs">
           <button 
             className={`nav-tab-btn ${activeTab === 'matches' ? 'active' : ''}`}
-            onClick={() => onTabChange('matches')}
+            onClick={() => setActiveTab('matches')}
           >
             <Calendar size={18} /> Fixtures & Results
           </button>
           <button 
             className={`nav-tab-btn ${activeTab === 'standings' ? 'active' : ''}`}
-            onClick={() => onTabChange('standings')}
+            onClick={() => setActiveTab('standings')}
           >
             <Table2 size={18} /> Standings
           </button>
           <button 
             className={`nav-tab-btn ${activeTab === 'search' ? 'active' : ''}`}
-            onClick={() => onTabChange('search')}
+            onClick={() => setActiveTab('search')}
           >
             <Search size={18} /> Player Scout (FUT)
           </button>
@@ -103,7 +103,7 @@ export default function Header({
         <div className="header-action-group">
           <select 
             value={selectedSeason} 
-            onChange={(e) => onSeasonChange(e.target.value)}
+            onChange={(e) => setSelectedSeason(e.target.value)}
             className="season-select-styled"
             title="Select Season"
           >
@@ -116,7 +116,7 @@ export default function Header({
 
           <button 
             className="live-indicator-btn" 
-            onClick={onLiveClick}
+            onClick={() => setShowLiveModal(true)}
           >
             <div className="pulse-dot"></div>
             LIVE RADAR

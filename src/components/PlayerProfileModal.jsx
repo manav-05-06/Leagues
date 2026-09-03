@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader, User, Trophy, Globe, Briefcase, Shield, Sparkles } from 'lucide-react';
 import { fetchPlayerProfile, fetchPlayerSeasonStats } from '../api.jsx';
 import './PlayerProfileModal.css';
+import { BarChart,Bar,XAxis,Tooltip,ResponsiveContainer,Cell } from 'recharts';
 
 export default function PlayerProfileModal({ playerId, teamId, leagueSlug, season, onClose }) {
   const [profile, setProfile] = useState(null);
   const [seasonStats, setSeasonStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
 
   useEffect(() => {
     const getData = async () => {
@@ -191,7 +193,39 @@ export default function PlayerProfileModal({ playerId, teamId, leagueSlug, seaso
               </div>
             )}
           </div>
+
+          {/* ADD THE CHART RIGHT HERE! 👇 */}
+          <div className="chart-container" style={{ width: '100%', height: 250, marginTop: '20px' }}>
+            <h3 style={{ textAlign: 'center', marginBottom: '10px' }}>Season Performance</h3>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: 'Goals', value: parseInt(goals || 0), color: '#3b82f6' },
+                { name: 'Assists', value: parseInt(assists || 0), color: '#10b981' },
+                { name: 'Shots', value: parseInt(shots || 0), color: '#f59e0b' },
+                { name: 'Saves', value: parseInt(saves || 0), color: '#ef4444' }
+              ]}>
+                <XAxis dataKey="name" stroke="#a0aec0" />
+                <Tooltip 
+                  cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} 
+                  contentStyle={{ backgroundColor: '#1e1e24', border: 'none', borderRadius: '8px' }}
+                />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {[
+                    { name: 'Goals', color: '#3b82f6' },
+                    { name: 'Assists', color: '#10b981' },
+                    { name: 'Shots', color: '#f59e0b' },
+                    { name: 'Saves', color: '#ef4444' }
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {/* 👆 END OF CHART */}
+
         </div>
+
       </div>
     );
   };
