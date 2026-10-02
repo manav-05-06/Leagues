@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Activity, Users, History, Loader, Award, Shield, Radio, Trophy, Timer } from 'lucide-react';
+import { X, Activity, Users, History, Loader, Award, Shield, Radio, Trophy, Timer, PlayCircle } from 'lucide-react';
 import { fetchMatchSummary } from '../api.jsx';
 import './MatchDetailModal.css';
 
@@ -12,7 +12,7 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
     const loadSummary = async () => {
       try {
         setLoading(true);
-        const data = await fetchMatchSummary(match.id);
+        const data = await fetchMatchSummary(match.id, match.leagueSlug);
         setSummary(data);
       } catch (err) {
         setError('Failed to load deep match statistics.');
@@ -21,7 +21,7 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
       }
     };
     loadSummary();
-  }, [match.id]);
+  }, [match.id, match.leagueSlug]);
 
   if (!match) return null;
 
@@ -344,6 +344,41 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Match Highlights (Only for Finished Matches) */}
+        {isFinished && (
+          <div className="match-highlights-container" style={{ margin: '2rem 0' }}>
+            <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
+              <PlayCircle size={18} color="#FF0000" /> <span>Official Match Highlights</span>
+            </h3>
+            <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+              Watch the official highlights on YouTube.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <a 
+                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${match.league} ${match.homeTeam.name} vs ${match.awayTeam.name} official highlights`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: '#FF0000',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '24px',
+                  textDecoration: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '0.95rem',
+                  transition: 'background-color 0.2s',
+                  boxShadow: '0 4px 6px rgba(255, 0, 0, 0.2)'
+                }}
+              >
+                <PlayCircle size={20} /> Watch on YouTube
+              </a>
             </div>
           </div>
         )}

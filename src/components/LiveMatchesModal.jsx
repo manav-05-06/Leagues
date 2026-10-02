@@ -4,11 +4,7 @@ import { fetchEspnMatches } from '../api.jsx';
 import './LiveMatchesModal.css';
 
 export default function LiveMatchesModal({ onClose, onMatchClick }) {
-  const [liveMatches, setLiveMatches] = useState({
-    'Premier League': [],
-    'LaLiga': [],
-    'German Bundesliga': []
-  });
+  const [groupedLiveMatches, setGroupedLiveMatches] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,21 +17,21 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
         // Filter live matches
         const live = data.filter(m => m.status === 'live');
         
-        // Group by league
-        const grouped = {
-          'Premier League': live.filter(m => m.league === 'English Premier League' || m.league === 'Premier League'),
-          'LaLiga': live.filter(m => m.league === 'Spanish LALIGA' || m.league === 'LaLiga'),
-          'German Bundesliga': live.filter(m => m.league === 'German Bundesliga' || m.league === 'Bundesliga')
-        };
-        
-        // Fallback matching if ESPN league names differ slightly
+        // Dynamically group by league
+        const groups = {};
         live.forEach(m => {
-           if (m.league.includes('Premier') && !grouped['Premier League'].includes(m)) grouped['Premier League'].push(m);
-           if (m.league.includes('Liga') && !grouped['LaLiga'].includes(m)) grouped['LaLiga'].push(m);
-           if (m.league.includes('Bundesliga') && !grouped['German Bundesliga'].includes(m)) grouped['German Bundesliga'].push(m);
+          const leagueName = m.league || 'Other Competitions';
+          if (!groups[leagueName]) {
+            groups[leagueName] = {
+              name: leagueName,
+              logo: m.leagueLogo || null,
+              matches: []
+            };
+          }
+          groups[leagueName].matches.push(m);
         });
 
-        setLiveMatches(grouped);
+        setGroupedLiveMatches(groups);
         setError(null);
       } catch (err) {
         setError("Failed to fetch live matches.");
@@ -51,16 +47,16 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
     return () => clearInterval(intervalId);
   }, []);
 
-  const totalLiveCount = 
-    liveMatches['Premier League'].length + 
-    liveMatches['LaLiga'].length + 
-    liveMatches['German Bundesliga'].length;
+  const totalLiveCount = Object.values(groupedLiveMatches).reduce(
+    (acc, grp) => acc + grp.matches.length, 
+    0
+  );
 
   const renderMatchList = (matches) => {
     if (matches.length === 0) {
       return (
         <div className="no-live-matches">
-          No live matches in this league right now. Check back at kickoff!
+          No live matches in this competition right now.
         </div>
       );
     }
@@ -121,9 +117,9 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
           <div className="live-modal-title-group">
             <h2 className="live-header-h2">
               <Radio size={24} className="pulse-dot" color="var(--accent-danger)" />
-              EUROPEAN MATCHDAY LIVE RADAR
+              WORLD MATCHDAY LIVE RADAR
             </h2>
-            <p className="live-header-sub">Real-time live scores and minute-by-minute updates across major European leagues</p>
+            <p className="live-header-sub">Real-time live scores and minute-by-minute updates across world competitions</p>
           </div>
           <div className="live-counter-pill">
             <span>{totalLiveCount}</span> LIVE NOW
@@ -133,44 +129,30 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
         {loading && !totalLiveCount ? (
           <div className="modal-loading">
             <div className="pitch-loading-spinner">⚽</div>
-            <p>Scanning European pitches for active live fixtures...</p>
+            <p>Scanning global pitches for active live fixtures...</p>
           </div>
         ) : error ? (
           <div className="modal-error">{error}</div>
+        ) : totalLiveCount === 0 ? (
+          <div className="no-live-matches" style={{ margin: '2rem 0', textAlign: 'center' }}>
+            No live fixtures currently in progress across monitored competitions. Check upcoming fixtures in Fixtures & Results tab!
+          </div>
         ) : (
           <div className="live-leagues-container">
-            <div className="live-league-section">
-              <h3 className="live-league-title">
-                <img src="https://a.espncdn.com/i/leaguelogos/soccer/500/23.png" alt="Premier League" />
-                Premier League
-                {liveMatches['Premier League'].length > 0 && (
-                  <span className="league-live-tag">{liveMatches['Premier League'].length} LIVE</span>
-                )}
-              </h3>
-              {renderMatchList(liveMatches['Premier League'])}
-            </div>
-            
-            <div className="live-league-section">
-              <h3 className="live-league-title">
-                <img src="https://a.espncdn.com/i/leaguelogos/soccer/500/15.png" alt="LaLiga" />
-                La Liga
-                {liveMatches['LaLiga'].length > 0 && (
-                  <span className="league-live-tag">{liveMatches['LaLiga'].length} LIVE</span>
-                )}
-              </h3>
-              {renderMatchList(liveMatches['LaLiga'])}
-            </div>
-            
-            <div className="live-league-section">
-              <h3 className="live-league-title">
-                <img src="https://a.espncdn.com/i/leaguelogos/soccer/500/10.png" alt="Bundesliga" />
-                Bundesliga
-                {liveMatches['German Bundesliga'].length > 0 && (
-                  <span className="league-live-tag">{liveMatches['German Bundesliga'].length} LIVE</span>
-                )}
-              </h3>
-              {renderMatchList(liveMatches['German Bundesliga'])}
-            </div>
+            {Object.values(groupedLiveMatches).map(group => (
+              <div key={group.name} className="live-league-section">
+                <h3 className="live-league-title">
+                  {group.logo ? (
+                    <img src={group.logo} alt={group.name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                  ) : (
+                    <Shield size={20} color="var(--accent-primary)" />
+                  )}
+                  {group.name}
+                  <span className="league-live-tag">{group.matches.length} LIVE</span>
+                </h3>
+                {renderMatchList(group.matches)}
+              </div>
+            ))}
           </div>
         )}
       </div>

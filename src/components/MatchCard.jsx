@@ -33,7 +33,15 @@ export default function MatchCard({ match, onClick }) {
     >
       <div className="match-header">
         <div className="league-info">
-          <Trophy size={14} color="var(--accent-primary)" />
+          {match.leagueLogo ? (
+            <img 
+              src={match.leagueLogo} 
+              alt={match.league} 
+              style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }} 
+            />
+          ) : (
+            <Trophy size={14} color="var(--accent-primary)" />
+          )}
           <span>{match.league}</span>
           
           <button 

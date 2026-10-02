@@ -1,12 +1,45 @@
-import React from 'react';
-import { Trophy, Search, Activity, Radio, Calendar, Table2, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trophy, Search, Activity, Radio, Calendar, Table2, Star, Globe, Award, Shield, Flame } from 'lucide-react';
 import { useAppStore } from '../store';
 
-const LEAGUES = [
-  { id: 'all', name: 'All Leagues', icon: '⚽' },
-  { id: 'eng.1', name: 'Premier League', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/23.png' },
-  { id: 'esp.1', name: 'La Liga', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/15.png' },
-  { id: 'ger.1', name: 'Bundesliga', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500/10.png' }
+export const LEAGUE_CATEGORIES = [
+  { id: 'all', label: 'All Competitions', icon: Trophy },
+  { id: 'top', label: 'Top European', icon: Shield },
+  { id: 'cups', label: 'European & Continental Cups', icon: Award },
+  { id: 'international', label: 'International', icon: Globe },
+  { id: 'global', label: 'Global Leagues', icon: Flame },
+];
+
+export const ALL_LEAGUES = [
+  // All Featured
+  { id: 'all', name: 'All Matches', category: 'all', icon: '⚽' },
+
+  // European & Continental Cups
+  { id: 'uefa.champions', name: 'Champions League', category: 'cups', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/2.png' },
+  { id: 'uefa.europa', name: 'Europa League', category: 'cups', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/2310.png' },
+  { id: 'uefa.europa.conf', name: 'Conference League', category: 'cups', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/20296.png' },
+  { id: 'conmebol.libertadores', name: 'Copa Libertadores', category: 'cups', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/58.png' },
+  { id: 'eng.fa', name: 'FA Cup', category: 'cups', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/40.png' },
+  { id: 'esp.copa_del_rey', name: 'Copa del Rey', category: 'cups', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/80.png' },
+
+  // Top Domestic Leagues
+  { id: 'eng.1', name: 'Premier League', category: 'top', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/23.png' },
+  { id: 'esp.1', name: 'La Liga', category: 'top', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/15.png' },
+  { id: 'ita.1', name: 'Serie A', category: 'top', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/12.png' },
+  { id: 'ger.1', name: 'Bundesliga', category: 'top', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/10.png' },
+  { id: 'fra.1', name: 'Ligue 1', category: 'top', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/9.png' },
+  { id: 'ned.1', name: 'Eredivisie', category: 'top', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/11.png' },
+  { id: 'por.1', name: 'Primeira Liga', category: 'top', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/14.png' },
+
+  // International Tournaments
+  { id: 'uefa.nations', name: 'UEFA Nations League', category: 'international', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/2395.png' },
+  { id: 'fifa.world', name: 'FIFA World Cup', category: 'international', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/4.png' },
+  { id: 'uefa.euro', name: 'UEFA Euro', category: 'international', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/53.png' },
+  { id: 'fifa.friendly', name: 'Intl Friendlies', category: 'international', icon: '🌍' },
+
+  // Global Leagues
+  { id: 'usa.1', name: 'MLS', category: 'global', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/19.png' },
+  { id: 'ksa.1', name: 'Saudi Pro League', category: 'global', logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/2488.png' },
 ];
 
 export default function Header({ liveCount = 0, totalCount = 0 }) {
@@ -18,7 +51,13 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
     setShowLiveModal 
   } = useAppStore();
 
-  // ... rest of the component stays exactly the same
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Filter visible league badges based on category
+  const visibleLeagues = selectedCategory === 'all' 
+    ? ALL_LEAGUES 
+    : ALL_LEAGUES.filter(l => l.category === selectedCategory || l.id === 'all');
+
   return (
     <header className="header">
       {/* Top Matchday Live Ticker */}
@@ -29,8 +68,8 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
           </span>
           <span className="ticker-text">
             {liveCount > 0 
-              ? `${liveCount} LIVE FIXTURE${liveCount > 1 ? 'S' : ''} IN PROGRESS ACROSS EUROPE`
-              : 'EUROPEAN FOOTBALL FIXTURES & RESULTS'
+              ? `${liveCount} LIVE FIXTURE${liveCount > 1 ? 'S' : ''} IN PROGRESS WORLDWIDE`
+              : 'WORLD FOOTBALL FIXTURES & RESULTS'
             }
           </span>
         </div>
@@ -54,27 +93,44 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
           </div>
           <div className="brand-title-group">
             <h1>Matchday Arena</h1>
-            <div className="brand-tagline">Elite Football & League Center</div>
+            <div className="brand-tagline">Worldwide Football & Competition Center</div>
           </div>
         </div>
 
-        {/* League Selector Badge Cards */}
-        <div className="league-selector-bar">
-          {LEAGUES.map(league => (
-            <button
-              key={league.id}
-              className={`league-btn-badge ${selectedLeague === league.id ? 'active' : ''}`}
-              onClick={() => setSelectedLeague(league.id)}
-            >
-              {league.logo ? (
-                <img src={league.logo} alt={league.name} />
-              ) : (
-                <span className="league-icon">{league.icon}</span>
-              )}
-              <span>{league.name}</span>
-            </button>
-          ))}
+        {/* Category Filter Pills */}
+        <div className="category-filter-bar">
+          {LEAGUE_CATEGORIES.map(cat => {
+            const Icon = cat.icon;
+            return (
+              <button
+                key={cat.id}
+                className={`category-pill-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(cat.id)}
+              >
+                <Icon size={14} />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
+      </div>
+
+      {/* League Selector Badge Cards */}
+      <div className="league-selector-bar">
+        {visibleLeagues.map(league => (
+          <button
+            key={league.id}
+            className={`league-btn-badge ${selectedLeague === league.id ? 'active' : ''}`}
+            onClick={() => setSelectedLeague(league.id)}
+          >
+            {league.logo ? (
+              <img src={league.logo} alt={league.name} />
+            ) : (
+              <span className="league-icon">{league.icon}</span>
+            )}
+            <span>{league.name}</span>
+          </button>
+        ))}
       </div>
 
       {/* Navigation Tabs & Header Controls */}

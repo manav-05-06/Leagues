@@ -8,7 +8,7 @@ import PlayerProfileModal from "./components/PlayerProfileModal";
 import PlayerSearch from "./components/PlayerSearch";
 import LiveMatchesModal from "./components/LiveMatchesModal";
 import { fetchEspnMatches } from "./api.jsx";
-import { Radio, Calendar, CheckCircle2, Clock, Star } from "lucide-react";
+import { Radio, Calendar, CheckCircle2, Clock, Star, Search } from "lucide-react";
 import "./index.css";
 import SkeletonCard from "./components/SkeletonCard";
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +22,9 @@ function App() {
     setSelectedMatchId, setSelectedPlayer, setActiveTab, setStatusFilter, setShowLiveModal
   } = useAppStore();
 
+  const [teamSearchQuery, setTeamSearchQuery] = useState("");
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState("all");
+
   // 2. Let React Query handle the API fetching, caching, and background refresh!
   const { data: matches = [], isLoading: loading, error } = useQuery({
     queryKey: ['matches', selectedLeague, selectedSeason],
@@ -31,7 +34,7 @@ function App() {
 
   // Apply dynamic theme to body based on selected league
   useEffect(() => {
-    const themeClass = `theme-${selectedLeague.replace(".", "")}`;
+    const themeClass = `theme-${selectedLeague.replace(/\./g, "")}`;
     document.body.className = themeClass;
   }, [selectedLeague]);
 
@@ -69,11 +72,38 @@ function App() {
 
   // Derive the active match dynamically
   const activeMatch = matches.find((m) => m.id === selectedMatchId);
-  // Filter matches based on status
+
+  // Get unique teams for the dropdown
+  const uniqueTeams = useMemo(() => {
+    const teams = new Map();
+    matches.forEach(m => {
+      if (m.homeTeam?.name) teams.set(m.homeTeam.name, m.homeTeam.name);
+      if (m.awayTeam?.name) teams.set(m.awayTeam.name, m.awayTeam.name);
+    });
+    return Array.from(teams.values()).sort();
+  }, [matches]);
+
+  // Filter matches based on status, search query, and team dropdown
   const filteredMatches = useMemo(() => {
-    if (statusFilter === "all") return matches;
-    return matches.filter((m) => m.status === statusFilter);
-  }, [matches, statusFilter]);
+    let result = matches;
+    if (statusFilter !== "all") {
+      result = result.filter(m => m.status === statusFilter);
+    }
+    if (selectedTeamFilter !== "all") {
+      result = result.filter(m => 
+        m.homeTeam?.name === selectedTeamFilter || 
+        m.awayTeam?.name === selectedTeamFilter
+      );
+    }
+    if (teamSearchQuery.trim() !== "") {
+      const query = teamSearchQuery.toLowerCase();
+      result = result.filter(m => 
+        m.homeTeam?.name?.toLowerCase().includes(query) || 
+        m.awayTeam?.name?.toLowerCase().includes(query)
+      );
+    }
+    return result;
+  }, [matches, statusFilter, selectedTeamFilter, teamSearchQuery]);
 
   const liveMatchesCount = useMemo(() => {
     return matches.filter((m) => m.status === "live").length;
@@ -158,6 +188,47 @@ function App() {
                     Showing <span>{filteredMatches.length}</span> of{" "}
                     {matches.length} matches
                   </div>
+                </div>
+
+                {/* Team Search and Dropdown Filter */}
+                <div className="team-filter-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '400px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input 
+                      type="text" 
+                      placeholder="Search for a team..." 
+                      value={teamSearchQuery}
+                      onChange={(e) => setTeamSearchQuery(e.target.value)}
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.6rem 1rem 0.6rem 2.2rem', 
+                        borderRadius: '12px', 
+                        border: '1px solid var(--border-color)', 
+                        background: 'var(--bg-secondary)', 
+                        color: 'var(--text-primary)',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                  <select 
+                    value={selectedTeamFilter} 
+                    onChange={(e) => setSelectedTeamFilter(e.target.value)}
+                    style={{ 
+                      padding: '0.6rem 1rem', 
+                      borderRadius: '12px', 
+                      border: '1px solid var(--border-color)', 
+                      background: 'var(--bg-secondary)', 
+                      color: 'var(--text-primary)', 
+                      cursor: 'pointer',
+                      outline: 'none',
+                      minWidth: '200px'
+                    }}
+                  >
+                    <option value="all">All Teams</option>
+                    {uniqueTeams.map(team => (
+                      <option key={team} value={team}>{team}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <MatchList
