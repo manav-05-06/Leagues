@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getTodayDateKey } from './api';
 
 // Wrap our store inside `persist`
 export const useAppStore = create(
@@ -8,6 +9,8 @@ export const useAppStore = create(
       // --- Standard UI State (Not Saved to LocalStorage) ---
       selectedLeague: 'all',
       selectedSeason: '2026',
+      selectedDate: getTodayDateKey(),
+      selectedMatch: null,
       selectedMatchId: null,
       selectedPlayer: null,
       activeTab: 'matches',
@@ -20,7 +23,12 @@ export const useAppStore = create(
       // --- Actions ---
       setSelectedLeague: (league) => set({ selectedLeague: league }),
       setSelectedSeason: (season) => set({ selectedSeason: season }),
-      setSelectedMatchId: (id) => set({ selectedMatchId: id }),
+      setSelectedDate: (dateKey) => set({ selectedDate: dateKey }),
+      setSelectedMatch: (match) => set({ selectedMatch: match, selectedMatchId: match?.id ?? null }),
+      setSelectedMatchId: (id) => set((state) => ({ 
+        selectedMatchId: id, 
+        selectedMatch: id ? (state.selectedMatch?.id === id ? state.selectedMatch : { id }) : null 
+      })),
       setSelectedPlayer: (player) => set({ selectedPlayer: player }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setStatusFilter: (filter) => set({ statusFilter: filter }),

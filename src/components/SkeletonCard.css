@@ -1,11 +1,11 @@
 .skeleton-card {
-  background: var(--card-bg, #1e1e24);
+  background: var(--pitch-card, #1e1e24);
   border-radius: 12px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  border: 1px solid var(--border-color, #333);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
 }
 
 /* The pulsing animation */

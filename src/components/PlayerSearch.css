@@ -269,6 +269,14 @@
   font-weight: 700;
 }
 
+.scout-rating-badge .fun-rating-sub {
+  color: #000;
+  opacity: 0.75;
+  font-weight: 700;
+  font-size: 0.5rem;
+  margin-top: 1px;
+}
+
 .scout-player-info {
   display: flex;
   flex-direction: column;

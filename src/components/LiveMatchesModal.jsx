@@ -1,56 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { X, Loader, Activity, Radio, Shield } from 'lucide-react';
-import { fetchEspnMatches } from '../api.jsx';
+import { useMemo } from 'react';
+import { Radio, Shield } from 'lucide-react';
+import { useTodayMatches } from '../hooks/useMatches';
+import TeamLogo from './TeamLogo';
+import Modal from './Modal';
 import './LiveMatchesModal.css';
 
 export default function LiveMatchesModal({ onClose, onMatchClick }) {
-  const [groupedLiveMatches, setGroupedLiveMatches] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data, isLoading: loading, error: queryError } = useTodayMatches();
+  const error = queryError ? 'Failed to fetch live matches.' : null;
 
-  useEffect(() => {
-    const getLiveMatches = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchEspnMatches('all', '2026'); 
-        
-        // Filter live matches
-        const live = data.filter(m => m.status === 'live');
-        
-        // Dynamically group by league
-        const groups = {};
-        live.forEach(m => {
-          const leagueName = m.league || 'Other Competitions';
-          if (!groups[leagueName]) {
-            groups[leagueName] = {
-              name: leagueName,
-              logo: m.leagueLogo || null,
-              matches: []
-            };
-          }
-          groups[leagueName].matches.push(m);
-        });
+  const matches = useMemo(() => data?.matches ?? [], [data]);
+  const liveMatches = useMemo(() => matches.filter(m => m.status === 'live'), [matches]);
 
-        setGroupedLiveMatches(groups);
-        setError(null);
-      } catch (err) {
-        setError("Failed to fetch live matches.");
-      } finally {
-        setLoading(false);
+  const groupedLiveMatches = useMemo(() => {
+    const groups = {};
+    liveMatches.forEach(m => {
+      const leagueName = m.league || 'Other Competitions';
+      if (!groups[leagueName]) {
+        groups[leagueName] = {
+          name: leagueName,
+          logo: m.leagueLogo || null,
+          matches: []
+        };
       }
-    };
+      groups[leagueName].matches.push(m);
+    });
+    return groups;
+  }, [liveMatches]);
 
-    getLiveMatches();
-    
-    // Poll every 30 seconds
-    const intervalId = setInterval(getLiveMatches, 30000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  const totalLiveCount = Object.values(groupedLiveMatches).reduce(
-    (acc, grp) => acc + grp.matches.length, 
-    0
-  );
+  const totalLiveCount = liveMatches.length;
 
   const renderMatchList = (matches) => {
     if (matches.length === 0) {
@@ -67,15 +45,24 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
           <div 
             key={match.id} 
             className="live-match-card"
+            role="button"
+            tabIndex={0}
             onClick={() => {
               onMatchClick(match);
               onClose();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onMatchClick(match);
+                onClose();
+              }
             }}
           >
             <div className="live-match-top-strip">
               <div className="live-match-time">
                 <span className="live-pulse-dot"></span>
-                <span>{match.time || 'LIVE'}</span>
+                <span>{match.statusDetail || match.time || 'LIVE'}</span>
               </div>
               <span className="click-to-view-tag">MATCH HUB &gt;</span>
             </div>
@@ -84,18 +71,18 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
               <div className="live-team-row">
                 <div className="live-team-name">
                   <div className="live-team-logo">
-                    {match.homeTeam.logo}
+                    <TeamLogo logo={match.homeTeam?.logoUrl || match.homeTeam?.logo} name={match.homeTeam?.name} />
                   </div>
-                  <span>{match.homeTeam.name}</span>
+                  <span>{match.homeTeam?.name}</span>
                 </div>
                 <span className="live-team-score">{match.score?.home ?? '0'}</span>
               </div>
               <div className="live-team-row">
                 <div className="live-team-name">
                   <div className="live-team-logo">
-                    {match.awayTeam.logo}
+                    <TeamLogo logo={match.awayTeam?.logoUrl || match.awayTeam?.logo} name={match.awayTeam?.name} />
                   </div>
-                  <span>{match.awayTeam.name}</span>
+                  <span>{match.awayTeam?.name}</span>
                 </div>
                 <span className="live-team-score">{match.score?.away ?? '0'}</span>
               </div>
@@ -107,13 +94,14 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{zIndex: 1200}}>
-      <div className="modal-content live-modal" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} title="Close Live Radar">
-          <X size={22} />
-        </button>
-        
-        <div className="live-modal-header">
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      className="live-modal"
+      overlayStyle={{ zIndex: 1200 }}
+      title="World Matchday Live Radar"
+    >
+      <div className="live-modal-header">
           <div className="live-modal-title-group">
             <h2 className="live-header-h2">
               <Radio size={24} className="pulse-dot" color="var(--accent-danger)" />
@@ -155,8 +143,7 @@ export default function LiveMatchesModal({ onClose, onMatchClick }) {
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
 

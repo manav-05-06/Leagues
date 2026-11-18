@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Loader, User, Shield, Sparkles, Compass } from 'lucide-react';
-import { searchPlayers } from '../api.jsx';
+import { useState, useEffect } from 'react';
+import { Search, User, Sparkles, Compass } from 'lucide-react';
+import { usePlayerSearch } from '../hooks/useMatches';
 import './PlayerSearch.css';
 
 const QUICK_SCOUT_SUGGESTIONS = [
@@ -11,8 +11,6 @@ const QUICK_SCOUT_SUGGESTIONS = [
 export default function PlayerSearch({ onPlayerSelect }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   // Debounce input
   useEffect(() => {
@@ -22,26 +20,7 @@ export default function PlayerSearch({ onPlayerSelect }) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Fetch results
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (!debouncedQuery || debouncedQuery.trim().length < 2) {
-        setResults([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        const data = await searchPlayers(debouncedQuery);
-        setResults(data);
-      } catch (err) {
-        console.error("Scout Search failed:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchResults();
-  }, [debouncedQuery]);
+  const { data: results = [], isLoading: loading } = usePlayerSearch(debouncedQuery);
 
   return (
     <div className="player-search-container">
@@ -97,7 +76,7 @@ export default function PlayerSearch({ onPlayerSelect }) {
         
         {!loading && debouncedQuery && debouncedQuery.trim().length >= 2 && results.length === 0 && (
           <div className="search-status">
-            <p>No football player found for "{debouncedQuery}". Try another name or spelling.</p>
+            <p>No football player found for &quot;{debouncedQuery}&quot;. Try another name or spelling.</p>
           </div>
         )}
 
@@ -116,7 +95,15 @@ export default function PlayerSearch({ onPlayerSelect }) {
                 <div 
                   key={player.id || idx} 
                   className="scout-player-card"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onPlayerSelect(player.id, null, player.leagueSlug)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onPlayerSelect(player.id, null, player.leagueSlug);
+                    }
+                  }}
                 >
                   <div className="scout-card-sheen"></div>
                   
@@ -128,9 +115,10 @@ export default function PlayerSearch({ onPlayerSelect }) {
                         <div className="scout-player-photo-placeholder"><User size={28} /></div>
                       )}
                     </div>
-                    <div className="scout-rating-badge">
+                    <div className="scout-rating-badge" title="Fun rating">
                       <span>{ovr}</span>
                       <small>OVR</small>
+                      <span className="fun-rating-sub">Fun rating</span>
                     </div>
                   </div>
 

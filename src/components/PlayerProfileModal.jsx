@@ -1,45 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { X, Loader, User, Trophy, Globe, Briefcase, Shield, Sparkles } from 'lucide-react';
-import { fetchPlayerProfile, fetchPlayerSeasonStats } from '../api.jsx';
+import { User, Trophy } from 'lucide-react';
+import { usePlayerProfile } from '../hooks/useMatches';
+import Modal from './Modal';
 import './PlayerProfileModal.css';
 import './FutCard.css';
-import { BarChart,Bar,XAxis,Tooltip,ResponsiveContainer,Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function PlayerProfileModal({ playerId, teamId, leagueSlug, season, onClose }) {
-  const [profile, setProfile] = useState(null);
-  const [seasonStats, setSeasonStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        setLoading(true);
-        const profileData = await fetchPlayerProfile(playerId);
-        
-        let statsData = null;
-        const targetTeamId = teamId || profileData?.team?.id;
-        const targetLeague = leagueSlug || 'eng.1';
-        
-        if (targetTeamId) {
-          statsData = await fetchPlayerSeasonStats(targetTeamId, season, targetLeague, playerId);
-        }
-
-        setProfile(profileData);
-        setSeasonStats(statsData);
-        setError(null);
-      } catch (err) {
-        setError("Failed to load player scouting profile.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (playerId) {
-      getData();
-    }
-  }, [playerId, teamId, leagueSlug, season]);
+  const { data, isLoading: loading, error: queryError } = usePlayerProfile(playerId, teamId, leagueSlug, season);
+  const profile = data?.profile;
+  const seasonStats = data?.seasonStats;
+  const error = queryError ? "Failed to load player scouting profile." : null;
 
   const renderContent = () => {
     if (loading) {
@@ -60,12 +30,8 @@ export default function PlayerProfileModal({ playerId, teamId, leagueSlug, seaso
     }
 
     const headshot = profile.headshot?.href;
-    const flag = profile.flag?.href;
     const name = profile.displayName || profile.fullName;
-    const nationality = profile.citizenship;
-    const age = profile.age || profile.displayDOB;
     const position = profile.position?.displayName || 'Forward';
-    const team = profile.team?.displayName;
     
     let goals = '0';
     let assists = '0';
@@ -123,13 +89,22 @@ export default function PlayerProfileModal({ playerId, teamId, leagueSlug, seaso
 
     const ovrRating = calculateOvrRating();
 
+    const chartData = posAbbrev === 'GK'
+      ? [{ name: 'Saves', value: parseInt(saves, 10) || 0, color: '#ef4444' }]
+      : [
+          { name: 'Goals', value: parseInt(goals, 10) || 0, color: '#3b82f6' },
+          { name: 'Assists', value: parseInt(assists, 10) || 0, color: '#10b981' },
+          { name: 'Shots', value: parseInt(shots, 10) || 0, color: '#f59e0b' }
+        ];
+
     return (
       <div className="fut-card-container">
         <div className="fut-card">
           <div className="fut-card-header">
-            <div className="fut-rating">
+            <div className="fut-rating" title="Fun rating">
               <span>{ovrRating}</span>
               <span className="fut-position">{posAbbrev}</span>
+              <span className="fun-rating-sub">Fun rating</span>
             </div>
             <div className="fut-player-image-wrapper">
               {headshot ? (
@@ -194,35 +169,23 @@ export default function PlayerProfileModal({ playerId, teamId, leagueSlug, seaso
             )}
           </div>
 
-          {/* ADD THE CHART RIGHT HERE! 👇 */}
-          <div className="chart-container" style={{ width: '100%', height: 250, marginTop: '20px' }}>
-            <h3 style={{ textAlign: 'center', marginBottom: '10px' }}>Season Performance</h3>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[
-                { name: 'Goals', value: parseInt(goals || 0), color: '#3b82f6' },
-                { name: 'Assists', value: parseInt(assists || 0), color: '#10b981' },
-                { name: 'Shots', value: parseInt(shots || 0), color: '#f59e0b' },
-                { name: 'Saves', value: parseInt(saves || 0), color: '#ef4444' }
-              ]}>
+          <div className="chart-container">
+            <h3 className="chart-title">Season Performance</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData}>
                 <XAxis dataKey="name" stroke="#a0aec0" />
                 <Tooltip 
                   cursor={{fill: 'rgba(255, 255, 255, 0.1)'}} 
                   contentStyle={{ backgroundColor: '#1e1e24', border: 'none', borderRadius: '8px' }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {[
-                    { name: 'Goals', color: '#3b82f6' },
-                    { name: 'Assists', color: '#10b981' },
-                    { name: 'Shots', color: '#f59e0b' },
-                    { name: 'Saves', color: '#ef4444' }
-                  ].map((entry, index) => (
+                  {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-          {/* 👆 END OF CHART */}
 
         </div>
 
@@ -231,14 +194,15 @@ export default function PlayerProfileModal({ playerId, teamId, leagueSlug, seaso
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{zIndex: 1100}}>
-      <div className="modal-content fut-card-modal" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} title="Close Profile">
-          <X size={22} />
-        </button>
-        {renderContent()}
-      </div>
-    </div>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      className="fut-card-modal"
+      overlayStyle={{ zIndex: 1100 }}
+      title="Player Profile"
+    >
+      {renderContent()}
+    </Modal>
   );
 }
 
