@@ -1,27 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { X, Activity, Users, History, Loader, Award, Shield, Radio, Trophy, Timer, PlayCircle } from 'lucide-react';
-import { fetchMatchSummary } from '../api.jsx';
+import { Activity, Users, History, Trophy, Timer, PlayCircle, Radio } from 'lucide-react';
+import { useMatchSummary } from '../hooks/useMatches';
+import TeamLogo from './TeamLogo';
+import Modal from './Modal';
+import { formatKickoff } from '../api';
 import './MatchDetailModal.css';
 
 export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const loadSummary = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchMatchSummary(match.id, match.leagueSlug);
-        setSummary(data);
-      } catch (err) {
-        setError('Failed to load deep match statistics.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadSummary();
-  }, [match.id, match.leagueSlug]);
+  const { data: summary, isLoading: loading, error: queryError } = useMatchSummary(match?.id);
+  const error = queryError ? 'Failed to load deep match statistics.' : null;
 
   if (!match) return null;
 
@@ -46,7 +32,7 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
     const headToHead = summary?.seasonseries?.[0]?.events || [];
 
     const getManOfTheMatch = () => {
-      if (!summary?.leaders) return null;
+      if (!isFinished || !summary?.leaders) return null;
       let motm = null;
 
       const findLeader = (categoryName) => {
@@ -88,15 +74,15 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
 
     return (
       <div className="modal-body">
-        {/* Man of the Match Golden Card */}
-        {motm && (
+        {/* Man of the Match Golden Card (Finished matches only) */}
+        {isFinished && motm && (
           <div className="detail-section motm-section">
             <div className="section-title-wrapper">
               <h3 className="section-title motm-header-title">
                 <Trophy size={20} color="var(--accent-gold)" /> 
                 <span>MAN OF THE MATCH</span>
               </h3>
-              <span className="motm-badge-pill">★ HIGHEST MATCH RATING</span>
+              <span className="motm-badge-pill">★ HIGHEST MATCH RATING (Fun rating)</span>
             </div>
             
             <div className="motm-content">
@@ -106,13 +92,23 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
                 ) : (
                   <div className="motm-image-placeholder">⚽</div>
                 )}
-                <div className="motm-star-tag">★ {motmRating}</div>
+                <div className="motm-star-tag" title="Fun rating">
+                  ★ {motmRating} <span style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 500 }}>(Fun rating)</span>
+                </div>
               </div>
 
               <div className="motm-info">
                 <div 
                   className="motm-name clickable-player" 
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onPlayerClick && onPlayerClick(motm.id, motm.teamId, match.leagueSlug)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onPlayerClick && onPlayerClick(motm.id, motm.teamId, match.leagueSlug);
+                    }
+                  }}
                   title="View Scout Profile"
                 >
                   {motm.name}
@@ -201,7 +197,7 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
           <div className="detail-section">
             <h3 className="section-title">
               <Users size={18} color="var(--accent-primary)" /> 
-              <span>Top Pitch Performers</span>
+              <span>{isFinished ? 'Top Pitch Performers' : 'Season Leaders'}</span>
             </h3>
             <div className="leaders-grid">
               {summary.leaders.map((teamLeaders, idx) => (
@@ -215,7 +211,15 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
                           <span 
                             key={i} 
                             className="leader-name-pill clickable-player"
+                            role="button"
+                            tabIndex={0}
                             onClick={() => l.athlete?.id && onPlayerClick && onPlayerClick(l.athlete.id, teamLeaders.team.id, match.leagueSlug)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                l.athlete?.id && onPlayerClick && onPlayerClick(l.athlete.id, teamLeaders.team.id, match.leagueSlug);
+                              }
+                            }}
                           >
                             {l.athlete?.shortName || l.athlete?.displayName} <strong>({l.displayValue})</strong>
                           </span>
@@ -233,37 +237,39 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content stadium-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} title="Close Matchday View">
-          <X size={22} />
-        </button>
-        
-        {/* Stadium Broadcast Scoreboard Header */}
+    <Modal
+      isOpen={Boolean(match)}
+      onClose={onClose}
+      className="stadium-modal"
+      title={`${match.homeTeam?.name || 'Home'} vs ${match.awayTeam?.name || 'Away'}`}
+    >
+      {/* Stadium Broadcast Scoreboard Header */}
         <div className="stadium-match-header">
           <div className="tactical-pitch-lines"></div>
 
           <div className="modal-team home">
             <div className="modal-logo-wrapper">
-              {match.homeTeam.logo}
+              <TeamLogo logo={match.homeTeam?.logoUrl || match.homeTeam?.logo} name={match.homeTeam?.name} />
             </div>
-            <h2>{match.homeTeam.name}</h2>
+            <h2>{match.homeTeam?.name}</h2>
           </div>
           
           <div className="modal-score">
             <div className={`modal-status-pill status-${match.status}`}>
               {isLive ? (
                 <>
-                  <Radio size={12} className="pulse-dot" /> LIVE {match.time ? `• ${match.time}` : ''}
+                  <Radio size={12} className="pulse-dot" /> LIVE {match.statusDetail || match.time ? `• ${match.statusDetail || match.time}` : ''}
                 </>
               ) : isFinished ? (
-                'FULL TIME'
+                match.statusDetail && match.statusDetail !== 'FT' ? match.statusDetail : 'FULL TIME'
+              ) : match.status === 'postponed' ? (
+                match.statusDetail || 'POSTPONED'
               ) : (
-                <><Timer size={12} /> {match.time || 'UPCOMING'}</>
+                <><Timer size={12} /> {match.kickoff ? formatKickoff(match.kickoff) : (match.time || 'UPCOMING')}</>
               )}
             </div>
             <div className="score-numbers-broadcast">
-              {match.status !== 'upcoming' ? (
+              {match.status !== 'upcoming' && match.status !== 'postponed' ? (
                 <>
                   <span className="score-digit">{match.score?.home ?? '0'}</span>
                   <span className="score-separator">:</span>
@@ -278,9 +284,9 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
 
           <div className="modal-team away">
             <div className="modal-logo-wrapper">
-              {match.awayTeam.logo}
+              <TeamLogo logo={match.awayTeam?.logoUrl || match.awayTeam?.logo} name={match.awayTeam?.name} />
             </div>
-            <h2>{match.awayTeam.name}</h2>
+            <h2>{match.awayTeam?.name}</h2>
           </div>
         </div>
         
@@ -315,7 +321,15 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
                           {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
                           <span 
                             className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                            role={athlete?.id ? "button" : undefined}
+                            tabIndex={athlete?.id ? 0 : undefined}
                             onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
+                            onKeyDown={(e) => {
+                              if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
+                                e.preventDefault();
+                                onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
+                              }
+                            }}
                           >
                             {athlete?.shortName || athlete?.displayName || 'Unknown'}
                           </span>
@@ -332,7 +346,15 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
                         <div className="timeline-content right">
                           <span 
                             className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                            role={athlete?.id ? "button" : undefined}
+                            tabIndex={athlete?.id ? 0 : undefined}
                             onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
+                            onKeyDown={(e) => {
+                              if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
+                                e.preventDefault();
+                                onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
+                              }
+                            }}
                           >
                             {athlete?.shortName || athlete?.displayName || 'Unknown'}
                           </span>
@@ -384,8 +406,7 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
         )}
 
         {renderContent()}
-      </div>
-    </div>
+    </Modal>
   );
 }
 

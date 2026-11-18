@@ -1,48 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, Radio, CheckCircle2, Clock, Activity, Crown, Shield, Award, Sparkles, TrendingUp, Filter } from 'lucide-react';
+import { useState } from 'react';
+import { Trophy, Radio, Activity, Crown, Shield, Award } from 'lucide-react';
 import { useAppStore } from '../store';
-import { fetchLeagueStandings } from '../api.jsx';
-import { ALL_LEAGUES } from './Header';
+import { useStandings } from '../hooks/useMatches';
+import { ALL_LEAGUES } from '../constants/leagues';
 
-export default function LeagueTable({ matches }) {
-  const { selectedLeague, selectedSeason, setSelectedLeague } = useAppStore();
+export default function LeagueTable({ matches = [], onTeamSelect }) {
+  const selectedLeague = useAppStore((state) => state.selectedLeague);
+  const selectedSeason = useAppStore((state) => state.selectedSeason);
+  const setSelectedLeague = useAppStore((state) => state.setSelectedLeague);
   
   // Active league for standings (if 'all' is selected, default to 'eng.1' for standings view)
   const currentLeagueSlug = selectedLeague === 'all' ? 'eng.1' : selectedLeague;
   
-  const [standingsData, setStandingsData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'distribution'
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadStandings = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchLeagueStandings(currentLeagueSlug, selectedSeason);
-        if (isMounted) {
-          if (data && data.groups && data.groups.length > 0) {
-            setStandingsData(data);
-          } else {
-            setStandingsData(null);
-          }
-        }
-      } catch (err) {
-        if (isMounted) setError("Standings currently unavailable for this competition/season.");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    loadStandings();
-    return () => { isMounted = false; };
-  }, [currentLeagueSlug, selectedSeason]);
+  const { data: standingsData, isLoading: loading, error: queryError } = useStandings(currentLeagueSlug, selectedSeason);
+  const error = queryError ? 'Standings currently unavailable for this competition/season.' : null;
 
   const activeLeagueInfo = ALL_LEAGUES.find(l => l.id === currentLeagueSlug) || {
     name: standingsData?.leagueName || 'League Table',
-    logo: 'https://a.espncdn.com/i/leaguelogos/soccer/500-dark/23.png'
+    logo: null
   };
 
   // Find leader / champion across first group
@@ -196,25 +173,24 @@ export default function LeagueTable({ matches }) {
                       <tbody>
                         {group.entries.map((entry) => {
                           const isLeader = entry.rank === 1;
-                          const isTop4 = entry.rank > 1 && entry.rank <= 4;
-                          const isEuropa = entry.rank === 5 || entry.rank === 6;
-                          const isRelegation = entry.rank >= group.entries.length - 2 && group.entries.length > 10;
-
-                          let rankBadgeClass = 'rank-standard';
-                          if (isLeader) rankBadgeClass = 'rank-gold';
-                          else if (isTop4) rankBadgeClass = 'rank-blue';
-                          else if (isEuropa) rankBadgeClass = 'rank-orange';
-                          else if (isRelegation) rankBadgeClass = 'rank-red';
+                          const noteColor = entry.note?.color;
 
                           return (
                             <tr key={entry.id || entry.rank} className={`standings-row ${isLeader ? 'leader-row' : ''}`}>
                               <td style={{ textAlign: 'center' }}>
-                                <span className={`rank-badge ${rankBadgeClass}`}>
-                                  {isLeader ? <Crown size={12} /> : null}
+                                <span 
+                                  className="rank-badge rank-standard"
+                                  style={noteColor ? { borderColor: noteColor, color: noteColor } : undefined}
+                                >
+                                  {isLeader && !noteColor ? <Crown size={12} /> : null}
                                   {entry.rank}
                                 </span>
                               </td>
-                              <td className="team-cell">
+                              <td 
+                                className={`team-cell ${onTeamSelect ? 'clickable-table-team' : ''}`}
+                                onClick={() => onTeamSelect && onTeamSelect(entry.team.name)}
+                                title={onTeamSelect ? `View ${entry.team.name} Team Hub` : undefined}
+                              >
                                 <div className="team-cell-wrapper">
                                   {entry.team.logo ? (
                                     <img src={entry.team.logo} alt={entry.team.name} className="table-team-logo" />
@@ -230,32 +206,16 @@ export default function LeagueTable({ matches }) {
                               <td style={{ textAlign: 'center', color: 'var(--accent-danger)' }}>{entry.stats.losses}</td>
                               <td className="hide-mobile" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>{entry.stats.goalsFor}</td>
                               <td className="hide-mobile" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>{entry.stats.goalsAgainst}</td>
-                              <td style={{ textAlign: 'center', fontWeight: 700, color: parseInt(entry.stats.goalDiff) > 0 ? '#00ff87' : parseInt(entry.stats.goalDiff) < 0 ? '#ff3366' : 'var(--text-main)' }}>
-                                {parseInt(entry.stats.goalDiff) > 0 ? `+${entry.stats.goalDiff}` : entry.stats.goalDiff}
+                              <td style={{ textAlign: 'center', fontWeight: 700, color: parseInt(entry.stats.goalDiff, 10) > 0 ? '#00ff87' : parseInt(entry.stats.goalDiff, 10) < 0 ? '#ff3366' : 'var(--text-main)' }}>
+                                {parseInt(entry.stats.goalDiff, 10) > 0 ? `+${entry.stats.goalDiff}` : entry.stats.goalDiff}
                               </td>
                               <td style={{ textAlign: 'center' }}>
                                 <strong className="pts-badge">{entry.stats.points}</strong>
                               </td>
                               <td className="hide-mobile">
                                 {entry.note ? (
-                                  <span className="qualification-note-tag" style={{ borderLeftColor: entry.note.color || 'var(--accent-primary)' }}>
+                                  <span className="qualification-note-tag" style={{ borderLeftColor: noteColor || 'var(--accent-primary)' }}>
                                     {entry.note.description}
-                                  </span>
-                                ) : isLeader ? (
-                                  <span className="qualification-note-tag leader-tag">
-                                    🏆 Champions / Winner
-                                  </span>
-                                ) : isTop4 ? (
-                                  <span className="qualification-note-tag ucl-tag">
-                                    ⭐ Champions League
-                                  </span>
-                                ) : isEuropa ? (
-                                  <span className="qualification-note-tag uel-tag">
-                                    🔸 Europa League
-                                  </span>
-                                ) : isRelegation ? (
-                                  <span className="qualification-note-tag rel-tag">
-                                    🔻 Relegation Zone
                                   </span>
                                 ) : (
                                   <span className="table-midtable-dash">&mdash;</span>

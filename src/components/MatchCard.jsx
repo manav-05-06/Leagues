@@ -1,26 +1,33 @@
-import React from 'react';
-import { Trophy, Radio, Clock, CheckCircle2, Shield, Star } from 'lucide-react';
+import { Trophy, Radio, Clock, CheckCircle2, Star } from 'lucide-react';
 import { useAppStore } from '../store';
+import TeamLogo from './TeamLogo';
+import { formatKickoff } from '../api';
 
-export default function MatchCard({ match, onClick }) {
-  const { favorites, toggleFavorite } = useAppStore();
+export default function MatchCard({ match, onClick, onTeamClick }) {
+  const favorites = useAppStore((state) => state.favorites);
+  const toggleFavorite = useAppStore((state) => state.toggleFavorite);
   const isFavorite = favorites.includes(match.id);
 
   const isLive = match.status === 'live';
   const isFinished = match.status === 'finished';
+  const isPostponed = match.status === 'postponed';
 
   let statusText = 'UPCOMING';
   let statusIcon = <Clock size={12} />;
   let statusClass = 'status-upcoming';
 
   if (isLive) {
-    statusText = match.time ? `${match.time}` : 'LIVE';
+    statusText = match.statusDetail || match.time || 'LIVE';
     statusIcon = <Radio size={12} className="pulse-dot" />;
     statusClass = 'status-live';
   } else if (isFinished) {
-    statusText = 'FULL TIME';
+    statusText = match.statusDetail && match.statusDetail !== 'FT' ? match.statusDetail : 'FULL TIME';
     statusIcon = <CheckCircle2 size={12} />;
     statusClass = 'status-finished';
+  } else if (isPostponed) {
+    statusText = match.statusDetail || 'POSTPONED';
+    statusIcon = <Clock size={12} />;
+    statusClass = 'status-upcoming';
   }
 
   // Extract recent goal scorers from match.details if available
@@ -29,7 +36,15 @@ export default function MatchCard({ match, onClick }) {
   return (
     <div 
       className={`match-card ${isLive ? 'is-live' : ''}`} 
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
     >
       <div className="match-header">
         <div className="league-info">
@@ -46,6 +61,8 @@ export default function MatchCard({ match, onClick }) {
           
           <button 
             className="favorite-btn"
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={isFavorite}
             onClick={(e) => {
               e.stopPropagation();
               toggleFavorite(match.id);
@@ -66,9 +83,20 @@ export default function MatchCard({ match, onClick }) {
       </div>
 
       <div className="match-content">
-        <div className="team">
-          <div className="team-logo-shield">{match.homeTeam.logo}</div>
-          <div className="team-name">{match.homeTeam.name}</div>
+        <div 
+          className={`team ${onTeamClick ? 'clickable-team' : ''}`}
+          onClick={(e) => {
+            if (onTeamClick && match.homeTeam?.name) {
+              e.stopPropagation();
+              onTeamClick(match.homeTeam.name);
+            }
+          }}
+          title={onTeamClick ? `View ${match.homeTeam?.name} Team Hub` : undefined}
+        >
+          <div className="team-logo-shield">
+            <TeamLogo logo={match.homeTeam?.logoUrl || match.homeTeam?.logo} name={match.homeTeam?.name} />
+          </div>
+          <div className="team-name">{match.homeTeam?.name}</div>
         </div>
 
         <div className="match-scoreboard-center">
@@ -85,13 +113,30 @@ export default function MatchCard({ match, onClick }) {
           )}
 
           <div className={`match-time-sub ${isLive ? 'live-pulse' : ''}`}>
-            {isLive ? `⚽ Match in Progress` : (isFinished ? 'FT' : match.time)}
+            {isLive
+              ? '⚽ Match in Progress'
+              : isFinished
+                ? (match.statusDetail || 'FT')
+                : isPostponed
+                  ? (match.statusDetail || 'Postponed')
+                  : (match.kickoff ? formatKickoff(match.kickoff) : match.time)}
           </div>
         </div>
 
-        <div className="team">
-          <div className="team-logo-shield">{match.awayTeam.logo}</div>
-          <div className="team-name">{match.awayTeam.name}</div>
+        <div 
+          className={`team ${onTeamClick ? 'clickable-team' : ''}`}
+          onClick={(e) => {
+            if (onTeamClick && match.awayTeam?.name) {
+              e.stopPropagation();
+              onTeamClick(match.awayTeam.name);
+            }
+          }}
+          title={onTeamClick ? `View ${match.awayTeam?.name} Team Hub` : undefined}
+        >
+          <div className="team-logo-shield">
+            <TeamLogo logo={match.awayTeam?.logoUrl || match.awayTeam?.logo} name={match.awayTeam?.name} />
+          </div>
+          <div className="team-name">{match.awayTeam?.name}</div>
         </div>
       </div>
 
