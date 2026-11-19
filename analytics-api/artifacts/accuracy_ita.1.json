@@ -1,0 +1,63 @@
+{
+  "league": "ita.1",
+  "test_matches": 1101,
+  "dixon_coles": {
+    "rps": 0.2019,
+    "brier": 0.1994,
+    "log_loss": 0.9998
+  },
+  "baselines": {
+    "league_base_rate": {
+      "rps": 0.2309,
+      "brier": 0.2195,
+      "log_loss": 1.0865,
+      "rates": {
+        "home": 0.418,
+        "draw": 0.279,
+        "away": 0.303
+      }
+    },
+    "uniform": {
+      "rps": 0.233
+    }
+  },
+  "rps_beats_base_rate": true,
+  "rps_beats_uniform": true,
+  "calibration": [
+    {
+      "bin": "0-20%",
+      "count": 119,
+      "predicted": 0.161,
+      "observed": 0.118,
+      "error": -0.043
+    },
+    {
+      "bin": "20-40%",
+      "count": 389,
+      "predicted": 0.301,
+      "observed": 0.288,
+      "error": -0.013
+    },
+    {
+      "bin": "40-60%",
+      "count": 396,
+      "predicted": 0.483,
+      "observed": 0.472,
+      "error": -0.011
+    },
+    {
+      "bin": "60-80%",
+      "count": 183,
+      "predicted": 0.668,
+      "observed": 0.656,
+      "error": -0.012
+    },
+    {
+      "bin": "80-100%",
+      "count": 14,
+      "predicted": 0.836,
+      "observed": 0.786,
+      "error": -0.051
+    }
+  ]
+}

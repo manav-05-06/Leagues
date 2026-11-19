@@ -1,0 +1,63 @@
+{
+  "league": "fra.1",
+  "test_matches": 848,
+  "dixon_coles": {
+    "rps": 0.2187,
+    "brier": 0.205,
+    "log_loss": 1.0298
+  },
+  "baselines": {
+    "league_base_rate": {
+      "rps": 0.2341,
+      "brier": 0.2146,
+      "log_loss": 1.0641,
+      "rates": {
+        "home": 0.429,
+        "draw": 0.255,
+        "away": 0.316
+      }
+    },
+    "uniform": {
+      "rps": 0.2402
+    }
+  },
+  "rps_beats_base_rate": true,
+  "rps_beats_uniform": true,
+  "calibration": [
+    {
+      "bin": "0-20%",
+      "count": 78,
+      "predicted": 0.149,
+      "observed": 0.256,
+      "error": 0.107
+    },
+    {
+      "bin": "20-40%",
+      "count": 337,
+      "predicted": 0.311,
+      "observed": 0.356,
+      "error": 0.045
+    },
+    {
+      "bin": "40-60%",
+      "count": 299,
+      "predicted": 0.502,
+      "observed": 0.535,
+      "error": 0.033
+    },
+    {
+      "bin": "60-80%",
+      "count": 119,
+      "predicted": 0.678,
+      "observed": 0.555,
+      "error": -0.123
+    },
+    {
+      "bin": "80-100%",
+      "count": 15,
+      "predicted": 0.835,
+      "observed": 0.8,
+      "error": -0.035
+    }
+  ]
+}

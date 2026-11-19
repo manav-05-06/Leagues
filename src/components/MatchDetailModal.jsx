@@ -1,11 +1,14 @@
-import { Activity, Users, History, Trophy, Timer, PlayCircle, Radio } from 'lucide-react';
+import { useState } from 'react';
+import { Activity, Users, History, Trophy, Timer, PlayCircle, Radio, BarChart2 } from 'lucide-react';
 import { useMatchSummary } from '../hooks/useMatches';
 import TeamLogo from './TeamLogo';
 import Modal from './Modal';
+import AnalyticsTab from './analytics/AnalyticsTab';
 import { formatKickoff } from '../api';
 import './MatchDetailModal.css';
 
 export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
+  const [activeTab, setActiveTab] = useState('overview');
   const { data: summary, isLoading: loading, error: queryError } = useMatchSummary(match?.id);
   const error = queryError ? 'Failed to load deep match statistics.' : null;
 
@@ -289,123 +292,197 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
             <h2>{match.awayTeam?.name}</h2>
           </div>
         </div>
-        
-        {/* Match Event Timeline */}
-        {match.details && match.details.length > 0 && (
-          <div className="match-timeline-container">
-            <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
-              <Timer size={18} color="var(--accent-primary)" /> <span>Match Timeline</span>
-            </h3>
-            <div className="timeline-vertical">
-              {match.details
-                .filter(d => d.scoringPlay || d.redCard || d.yellowCard)
-                .map((event, i) => {
-                const isHome = event.team?.id === match.homeTeamId;
-                const athlete = event.athletesInvolved?.[0];
-                const time = event.clock?.displayValue || "?'";
-                
-                let icon = '';
-                let className = '';
-                if (event.scoringPlay) { icon = '⚽'; className = 'timeline-goal'; }
-                else if (event.redCard) { icon = ''; className = 'timeline-red'; }
-                else if (event.yellowCard) { icon = ''; className = 'timeline-yellow'; }
-                
-                if (!className) return null;
 
-                return (
-                  <div key={i} className={`timeline-row ${isHome ? 'home-event' : 'away-event'}`}>
-                    {isHome ? (
-                      <>
-                        <div className="timeline-content left">
-                          {event.ownGoal && <span className="goal-meta">(OG)</span>}
-                          {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
-                          <span 
-                            className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
-                            role={athlete?.id ? "button" : undefined}
-                            tabIndex={athlete?.id ? 0 : undefined}
-                            onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
-                            onKeyDown={(e) => {
-                              if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
-                                e.preventDefault();
-                                onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
-                              }
-                            }}
-                          >
-                            {athlete?.shortName || athlete?.displayName || 'Unknown'}
-                          </span>
-                        </div>
-                        <div className={`timeline-icon ${className}`}>{icon}</div>
-                        <div className="timeline-time">{time}</div>
-                        <div className="timeline-content right"></div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="timeline-content left"></div>
-                        <div className="timeline-time">{time}</div>
-                        <div className={`timeline-icon ${className}`}>{icon}</div>
-                        <div className="timeline-content right">
-                          <span 
-                            className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
-                            role={athlete?.id ? "button" : undefined}
-                            tabIndex={athlete?.id ? 0 : undefined}
-                            onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
-                            onKeyDown={(e) => {
-                              if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
-                                e.preventDefault();
-                                onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
-                              }
-                            }}
-                          >
-                            {athlete?.shortName || athlete?.displayName || 'Unknown'}
-                          </span>
-                          {event.ownGoal && <span className="goal-meta">(OG)</span>}
-                          {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        {/* Overview vs Analytics Tab Switcher */}
+        <div className="match-tabs-bar" style={{ display: 'flex', justifyContent: 'center', margin: '1.25rem 0', padding: '0 1rem' }}>
+          <div style={{
+            display: 'flex',
+            backgroundColor: 'rgba(30, 41, 59, 0.85)',
+            padding: '4px',
+            borderRadius: '12px',
+            border: '1px solid rgba(51, 65, 85, 0.6)',
+            width: '100%',
+            maxWidth: '320px',
+            gap: '4px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setActiveTab('overview')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: activeTab === 'overview' ? '700' : '500',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                backgroundColor: activeTab === 'overview' ? 'var(--accent-primary, #00ff87)' : 'transparent',
+                color: activeTab === 'overview' ? '#0f172a' : '#94a3b8',
+              }}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('analytics')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                fontWeight: activeTab === 'analytics' ? '700' : '500',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+                backgroundColor: activeTab === 'analytics' ? 'var(--accent-primary, #00ff87)' : 'transparent',
+                color: activeTab === 'analytics' ? '#0f172a' : '#94a3b8',
+              }}
+            >
+              <BarChart2 size={14} />
+              <span>Analytics</span>
+              <span style={{
+                fontSize: '0.65rem',
+                padding: '1px 4px',
+                borderRadius: '4px',
+                backgroundColor: activeTab === 'analytics' ? 'rgba(15, 23, 42, 0.25)' : 'rgba(0, 255, 135, 0.15)',
+                color: activeTab === 'analytics' ? '#0f172a' : '#00ff87',
+                fontWeight: 700
+              }}>
+                xG
+              </span>
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Match Highlights (Only for Finished Matches) */}
-        {isFinished && (
-          <div className="match-highlights-container" style={{ margin: '2rem 0' }}>
-            <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
-              <PlayCircle size={18} color="#FF0000" /> <span>Official Match Highlights</span>
-            </h3>
-            <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-              Watch the official highlights on YouTube.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <a 
-                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${match.league} ${match.homeTeam.name} vs ${match.awayTeam.name} official highlights`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: '#FF0000',
-                  color: 'white',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '24px',
-                  textDecoration: 'none',
-                  fontWeight: 'bold',
-                  fontSize: '0.95rem',
-                  transition: 'background-color 0.2s',
-                  boxShadow: '0 4px 6px rgba(255, 0, 0, 0.2)'
-                }}
-              >
-                <PlayCircle size={20} /> Watch on YouTube
-              </a>
-            </div>
+        {activeTab === 'analytics' ? (
+          <div style={{ padding: '0.5rem 1rem 2rem' }}>
+            <AnalyticsTab match={match} onPlayerClick={onPlayerClick} />
           </div>
-        )}
+        ) : (
+          <>
+            {/* Match Event Timeline */}
+            {match.details && match.details.length > 0 && (
+              <div className="match-timeline-container">
+                <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
+                  <Timer size={18} color="var(--accent-primary)" /> <span>Match Timeline</span>
+                </h3>
+                <div className="timeline-vertical">
+                  {match.details
+                    .filter(d => d.scoringPlay || d.redCard || d.yellowCard)
+                    .map((event, i) => {
+                    const isHome = event.team?.id === match.homeTeamId;
+                    const athlete = event.athletesInvolved?.[0];
+                    const time = event.clock?.displayValue || "?'";
+                    
+                    let icon = '';
+                    let className = '';
+                    if (event.scoringPlay) { icon = '⚽'; className = 'timeline-goal'; }
+                    else if (event.redCard) { icon = ''; className = 'timeline-red'; }
+                    else if (event.yellowCard) { icon = ''; className = 'timeline-yellow'; }
+                    
+                    if (!className) return null;
 
-        {renderContent()}
+                    return (
+                      <div key={i} className={`timeline-row ${isHome ? 'home-event' : 'away-event'}`}>
+                        {isHome ? (
+                          <>
+                            <div className="timeline-content left">
+                              {event.ownGoal && <span className="goal-meta">(OG)</span>}
+                              {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
+                              <span 
+                                className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                                role={athlete?.id ? "button" : undefined}
+                                tabIndex={athlete?.id ? 0 : undefined}
+                                onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
+                                onKeyDown={(e) => {
+                                  if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
+                                    e.preventDefault();
+                                    onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
+                                  }
+                                }}
+                              >
+                                {athlete?.shortName || athlete?.displayName || 'Unknown'}
+                              </span>
+                            </div>
+                            <div className={`timeline-icon ${className}`}>{icon}</div>
+                            <div className="timeline-time">{time}</div>
+                            <div className="timeline-content right"></div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="timeline-content left"></div>
+                            <div className="timeline-time">{time}</div>
+                            <div className={`timeline-icon ${className}`}>{icon}</div>
+                            <div className="timeline-content right">
+                              <span 
+                                className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                                role={athlete?.id ? "button" : undefined}
+                                tabIndex={athlete?.id ? 0 : undefined}
+                                onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
+                                onKeyDown={(e) => {
+                                  if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
+                                    e.preventDefault();
+                                    onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
+                                  }
+                                }}
+                              >
+                                {athlete?.shortName || athlete?.displayName || 'Unknown'}
+                              </span>
+                              {event.ownGoal && <span className="goal-meta">(OG)</span>}
+                              {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Match Highlights (Only for Finished Matches) */}
+            {isFinished && (
+              <div className="match-highlights-container" style={{ margin: '2rem 0' }}>
+                <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
+                  <PlayCircle size={18} color="#FF0000" /> <span>Official Match Highlights</span>
+                </h3>
+                <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                  Watch the official highlights on YouTube.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <a 
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${match.league} ${match.homeTeam.name} vs ${match.awayTeam.name} official highlights`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      backgroundColor: '#FF0000',
+                      color: 'white',
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '24px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      fontSize: '0.95rem',
+                      transition: 'background-color 0.2s',
+                      boxShadow: '0 4px 6px rgba(255, 0, 0, 0.2)'
+                    }}
+                  >
+                    <PlayCircle size={20} /> Watch on YouTube
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {renderContent()}
+          </>
+        )}
     </Modal>
   );
 }

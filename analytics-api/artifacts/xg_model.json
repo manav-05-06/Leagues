@@ -1,0 +1,33 @@
+{
+  "features": [
+    "distance",
+    "angle",
+    "distance_x_angle",
+    "header",
+    "direct_free_kick",
+    "from_corner",
+    "fast_break",
+    "assisted"
+  ],
+  "coefficients": [
+    -0.135773,
+    1.11835,
+    0.155057,
+    -1.150965,
+    0.61237,
+    -0.635885,
+    0.436939,
+    -0.007721
+  ],
+  "intercept": -1.604484,
+  "penalty_xg": 0.7038,
+  "metrics": {
+    "test_log_loss": 0.2819,
+    "baseline_log_loss": 0.2923,
+    "test_brier": 0.0781,
+    "ece": 0.0083,
+    "statsbomb_correlation": 0.798,
+    "train_samples": 7783,
+    "test_samples": 1946
+  }
+}

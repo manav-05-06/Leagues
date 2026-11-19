@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Radio, Calendar, Table2, Star } from 'lucide-react';
+import { Search, Radio, Calendar, Table2, Star, PlayCircle } from 'lucide-react';
 import { useAppStore } from '../store';
 import { useShallow } from 'zustand/react/shallow';
 import { ALL_LEAGUES, LEAGUE_CATEGORIES } from '../constants/leagues';
@@ -138,6 +138,13 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
             onClick={() => setActiveTab('favorites')}
           >
             <Star size={18} /> My Favorites
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'replay' ? 'active' : ''}`}
+            onClick={() => setActiveTab('replay')}
+            title="Tactical 2D Player Tracking Replay"
+          >
+            <PlayCircle size={18} color="#00ff87" /> Tactical Replay
           </button>
         </div>
 

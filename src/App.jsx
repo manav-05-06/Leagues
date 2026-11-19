@@ -15,6 +15,7 @@ const MatchDetailModal = lazy(() => import("./components/MatchDetailModal"));
 const PlayerProfileModal = lazy(() => import("./components/PlayerProfileModal"));
 const LiveMatchesModal = lazy(() => import("./components/LiveMatchesModal"));
 const TeamSidePanel = lazy(() => import("./components/TeamSidePanel"));
+const ReplayPage = lazy(() => import("./components/replay/ReplayPage"));
 
 function App() {
   // 1. Get our UI state from Zustand with shallow selector
@@ -84,6 +85,21 @@ function App() {
     setSelectedTeamFilter("all");
     setTeamSearchQuery("");
   }, [selectedLeague, selectedSeason, selectedDate]);
+
+  // Sync /replay hash route with activeTab
+  useEffect(() => {
+    if (window.location.hash === '#replay') {
+      setActiveTab('replay');
+    }
+  }, [setActiveTab]);
+
+  useEffect(() => {
+    if (activeTab === 'replay') {
+      window.location.hash = 'replay';
+    } else if (window.location.hash === '#replay') {
+      history.replaceState(null, '', ' ');
+    }
+  }, [activeTab]);
 
   // Goal Notification Watcher (watching today's live matches worldwide)
   const prevMatchesRef = useRef();
@@ -436,6 +452,16 @@ function App() {
               setSelectedPlayer({ id, teamId, leagueSlug })
             }
           />
+        )}
+
+        {activeTab === "replay" && (
+          <Suspense fallback={
+            <div className="content-layout" style={{ minHeight: 450, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="replay-spinner" />
+            </div>
+          }>
+            <ReplayPage />
+          </Suspense>
         )}
       </main>
 

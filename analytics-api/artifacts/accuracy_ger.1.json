@@ -1,0 +1,63 @@
+{
+  "league": "ger.1",
+  "test_matches": 790,
+  "dixon_coles": {
+    "rps": 0.21,
+    "brier": 0.2001,
+    "log_loss": 1.0071
+  },
+  "baselines": {
+    "league_base_rate": {
+      "rps": 0.236,
+      "brier": 0.2189,
+      "log_loss": 1.0837,
+      "rates": {
+        "home": 0.461,
+        "draw": 0.268,
+        "away": 0.271
+      }
+    },
+    "uniform": {
+      "rps": 0.2373
+    }
+  },
+  "rps_beats_base_rate": true,
+  "rps_beats_uniform": true,
+  "calibration": [
+    {
+      "bin": "0-20%",
+      "count": 42,
+      "predicted": 0.158,
+      "observed": 0.119,
+      "error": -0.039
+    },
+    {
+      "bin": "20-40%",
+      "count": 229,
+      "predicted": 0.308,
+      "observed": 0.275,
+      "error": -0.033
+    },
+    {
+      "bin": "40-60%",
+      "count": 354,
+      "predicted": 0.494,
+      "observed": 0.412,
+      "error": -0.081
+    },
+    {
+      "bin": "60-80%",
+      "count": 155,
+      "predicted": 0.7,
+      "observed": 0.729,
+      "error": 0.029
+    },
+    {
+      "bin": "80-100%",
+      "count": 10,
+      "predicted": 0.819,
+      "observed": 0.7,
+      "error": -0.119
+    }
+  ]
+}
