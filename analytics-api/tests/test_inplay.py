@@ -25,13 +25,14 @@ def test_inplay_at_kickoff():
 def test_inplay_at_full_time_home_leading():
     res = calculate_live_win_probability(
         minute=90,
+        period=2,
+        added=4,
         current_home_goals=1,
         current_away_goals=0,
         home_xg=1.2,
         away_xg=0.4,
-        added_time=0,
     )
-    # Step 17 requirement: at 90' with home 1-0 up, home win > 0.99
+    # At full time (90+4' stoppage time expired) with home 1-0 up, home win is locked
     assert res["home"] > 0.99
     assert res["away"] == 0.0
     assert res["draw"] < 0.01

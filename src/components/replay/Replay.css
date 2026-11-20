@@ -9,6 +9,25 @@
   padding: 1rem 1rem 3rem 1rem;
 }
 
+.replay-intro-banner {
+  background: var(--pitch-card, #14141e);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.replay-voronoi-note {
+  color: var(--accent-primary, #00ff87);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 /* Header & Match Selector */
 .replay-header-panel {
   display: flex;

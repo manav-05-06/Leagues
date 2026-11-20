@@ -35,6 +35,34 @@ async def test_predict_prematch_endpoint_by_names():
 
 
 @pytest.mark.asyncio
+async def test_predict_prematch_endpoint_by_ids():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(
+            "/predict/prematch",
+            params={"league": "eng.1", "home_id": "359", "away_id": "363"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["home_id"] == "359"
+    assert data["away_id"] == "363"
+    assert data["home_name"] == "Arsenal"
+    assert data["away_name"] == "Chelsea"
+
+
+@pytest.mark.asyncio
+async def test_predict_prematch_rejects_partial_name():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(
+            "/predict/prematch",
+            params={"league": "eng.1", "home": "United", "away": "Arsenal"},
+        )
+
+    # Partial name match "United" must be rejected with 404
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_predict_prematch_not_found_league():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get(

@@ -120,6 +120,11 @@ export function mapEvent(event, defaultLeagueInfo = {}) {
     || awayCompetitor?.team?.logos?.[0]?.href 
     || null;
 
+  const homeColor = homeCompetitor?.team?.color ? `#${homeCompetitor.team.color.replace(/^#/, '')}` : null;
+  const homeAltColor = homeCompetitor?.team?.alternateColor ? `#${homeCompetitor.team.alternateColor.replace(/^#/, '')}` : null;
+  const awayColor = awayCompetitor?.team?.color ? `#${awayCompetitor.team.color.replace(/^#/, '')}` : null;
+  const awayAltColor = awayCompetitor?.team?.alternateColor ? `#${awayCompetitor.team.alternateColor.replace(/^#/, '')}` : null;
+
   return {
     id: String(event.id || competition.id),
     league: leagueName,
@@ -139,12 +144,16 @@ export function mapEvent(event, defaultLeagueInfo = {}) {
       name: homeCompetitor?.team?.displayName || homeCompetitor?.team?.name || 'Unknown',
       logoUrl: homeLogoUrl,
       logo: homeLogoUrl,
+      color: homeColor,
+      altColor: homeAltColor,
     },
     awayTeam: {
       id: awayCompetitor?.team?.id,
       name: awayCompetitor?.team?.displayName || awayCompetitor?.team?.name || 'Unknown',
       logoUrl: awayLogoUrl,
       logo: awayLogoUrl,
+      color: awayColor,
+      altColor: awayAltColor,
     },
     homeTeamId: homeCompetitor?.team?.id,
     awayTeamId: awayCompetitor?.team?.id,

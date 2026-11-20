@@ -1,5 +1,6 @@
 import sqlite3
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -60,14 +61,20 @@ def extract_match(event: dict[str, Any], league_slug: str) -> dict[str, Any] | N
     comp = competitions[0] if competitions else {}
     status_type = comp.get("status", {}).get("type", {})
     status_state = status_type.get("state", "")
+    is_completed = status_type.get("completed", False)
 
-    # Only include completed matches with scores
-    if status_state != "post" and status_type.get("name") not in (
-        "STATUS_FULL_TIME",
-        "STATUS_FINAL_AET",
-        "STATUS_FINAL_PEN",
-    ):
+    # Only include completed matches with scores and dates in the past
+    if not is_completed or status_state != "post":
         return None
+
+    try:
+        match_dt = datetime.fromisoformat(date_str)
+        if match_dt.tzinfo is None:
+            match_dt = match_dt.replace(tzinfo=UTC)
+        if match_dt > datetime.now(UTC):
+            return None
+    except (ValueError, TypeError):
+        pass
 
     competitors = comp.get("competitors", [])
     if len(competitors) < 2:
@@ -151,6 +158,29 @@ def backfill_league(
             print(f"  -> Failed to fetch {league_slug} {year}: {e}")
 
     return inserted_or_updated
+
+
+def clean_invalid_matches(conn: sqlite3.Connection) -> int:
+    """Delete matches with future dates or uncompleted status from results.db."""
+    now_iso = datetime.now(UTC).isoformat()
+    with conn:
+        cur = conn.execute(
+            "DELETE FROM matches WHERE date > :now",
+            {"now": now_iso},
+        )
+        deleted = cur.rowcount
+    if deleted > 0:
+        print(f"Cleaned {deleted} invalid/future matches from database.")
+    return deleted
+
+
+def run():
+    conn = init_db()
+    clean_invalid_matches(conn)
+    headers = {"User-Agent": "Leagues-Analytics/1.0 (Backfill)"}
+    with httpx.Client(headers=headers) as client:
+        for league in TARGET_LEAGUES:
+            backfill_league(league, conn, client)
 
 
 def main():

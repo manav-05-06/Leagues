@@ -8,10 +8,29 @@
  */
 export default function HalfPitch({ children, className = '' }) {
   return (
-    <div className={`relative w-full aspect-[55/68] max-w-md mx-auto overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/90 shadow-inner select-none ${className}`}>
+    <div
+      className={`half-pitch-stage ${className}`}
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: '55 / 68',
+        maxWidth: '440px',
+        margin: '0 auto',
+        overflow: 'hidden',
+        borderRadius: '10px',
+        border: '1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08))',
+        background: 'rgba(10, 28, 19, 0.85)',
+        userSelect: 'none',
+      }}
+    >
       <svg
         viewBox="50 0 55 68"
-        className="w-full h-full text-slate-600/70"
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          color: 'rgba(255, 255, 255, 0.25)',
+        }}
         fill="none"
         stroke="currentColor"
         strokeWidth="0.5"

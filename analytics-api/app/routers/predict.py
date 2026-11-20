@@ -98,39 +98,59 @@ def get_or_train_model(league: str) -> DixonColesModel:
     return model
 
 
-def resolve_team_id(model: DixonColesModel, team_identifier: str) -> str:
-    cleaned = team_identifier.strip().lower()
+def resolve_team_id(
+    model: DixonColesModel, team_id: str | None = None, team_name: str | None = None
+) -> str:
+    # 1. Exact ID match if team_id provided
+    if team_id is not None:
+        tid_str = str(team_id).strip()
+        if tid_str in model.team_indices:
+            return tid_str
+
+    ident = team_id if team_id is not None else team_name
+    if not ident:
+        raise HTTPException(status_code=400, detail="Team identifier required")
+
+    cleaned = str(ident).strip().lower()
 
     # Exact ID match
-    if str(team_identifier) in model.team_indices:
-        return str(team_identifier)
+    if str(ident).strip() in model.team_indices:
+        return str(ident).strip()
 
-    # Search by display name
+    # Exact display name match (case-insensitive)
     for t_id, name in model.team_names.items():
-        if name.lower() == cleaned:
+        if name.strip().lower() == cleaned:
             return t_id
 
-    # Partial name match
-    for t_id, name in model.team_names.items():
-        if cleaned in name.lower() or name.lower() in cleaned:
-            return t_id
-
-    return team_identifier
+    # No fuzzy/partial match allowed: return 404
+    raise HTTPException(
+        status_code=404,
+        detail=f"Team '{ident}' not found in ratings for league '{model.league}'",
+    )
 
 
 @router.get("/prematch", response_model=PrematchPredictionResponse)
 async def predict_prematch(
     league: str = Query(..., description="League slug (e.g. eng.1, esp.1)"),
-    home: str = Query(..., description="Home team name or ID"),
-    away: str = Query(..., description="Away team name or ID"),
+    home: str | None = Query(None, description="Home team name or ID"),
+    away: str | None = Query(None, description="Away team name or ID"),
+    home_id: str | None = Query(None, description="Home team ID"),
+    away_id: str | None = Query(None, description="Away team ID"),
 ):
     """
     Generate pre-match prediction using the Dixon-Coles Poisson model.
+    Accepts home_id/away_id or exact team names. Unknown teams return 404.
     """
+    if not (home or home_id) or not (away or away_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Both home and away identifiers (home/home_id and away/away_id) are required.",
+        )
+
     model = get_or_train_model(league)
 
-    home_id = resolve_team_id(model, home)
-    away_id = resolve_team_id(model, away)
+    h_id = resolve_team_id(model, home_id, home)
+    a_id = resolve_team_id(model, away_id, away)
 
-    pred = model.predict_match(home_id, away_id)
+    pred = model.predict_match(h_id, a_id)
     return PrematchPredictionResponse(**pred)

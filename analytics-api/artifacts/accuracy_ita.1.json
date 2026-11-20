@@ -1,6 +1,14 @@
 {
   "league": "ita.1",
   "test_matches": 1101,
+  "shrink_k": 0.0,
+  "base_rates": {
+    "home": 0.4072,
+    "draw": 0.2714,
+    "away": 0.3214
+  },
+  "hit_rate": 0.5114,
+  "always_home_hit_rate": 0.4033,
   "dixon_coles": {
     "rps": 0.2019,
     "brier": 0.1994,
@@ -57,7 +65,7 @@
       "count": 14,
       "predicted": 0.836,
       "observed": 0.786,
-      "error": -0.051
+      "error": -0.05
     }
   ]
 }

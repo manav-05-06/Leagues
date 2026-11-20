@@ -1,6 +1,7 @@
 """Admin endpoints for operational management and background maintenance."""
 
 import logging
+import secrets
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
@@ -12,16 +13,28 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-async def run_refresh_task() -> None:
-    """Run results backfill and rating refitting asynchronously."""
-    logger.info("Starting scheduled background model and results refresh...")
+def _sync_refresh() -> None:
+    """Run results backfill, rating refit, and backtest synchronously in a worker thread."""
+    logger.info("Starting background results backfill and rating refit...")
     try:
-        # Import dynamically so startup is not blocked
-        from training import fit_ratings  # noqa: F401
+        from app.routers.analytics import _analytics_finished_cache, _analytics_live_cache
+        from app.routers.predict import _models_cache
+        from training import backfill_results, backtest, fit_ratings
 
-        logger.info("Model refresh completed successfully.")
+        logger.info("Running backfill_results.run()...")
+        backfill_results.run()
+        logger.info("Running fit_ratings.run()...")
+        fit_ratings.run()
+        logger.info("Running backtest.run()...")
+        backtest.run()
+
+        # Clear cached models and analytics responses
+        _models_cache.clear()
+        _analytics_live_cache.clear()
+        _analytics_finished_cache.clear()
+        logger.info("Background model and results refresh completed successfully.")
     except Exception as exc:  # noqa: BLE001
-        logger.error("Failed to run refresh: %s", exc)
+        logger.error("Background refresh failed: %s", exc)
 
 
 @router.post("/refresh")
@@ -31,12 +44,18 @@ async def trigger_refresh(
 ) -> dict[str, Any]:
     """Trigger background refresh of results, ratings, and accuracy metrics.
 
-    Requires X-Admin-Token header.
+    Requires X-Admin-Token header. Returns 503 if ADMIN_TOKEN is not configured.
     """
-    if not x_admin_token or x_admin_token != settings.admin_token:
+    if not settings.admin_token:
+        raise HTTPException(
+            status_code=503,
+            detail="Refresh disabled: ADMIN_TOKEN is not configured.",
+        )
+
+    if not x_admin_token or not secrets.compare_digest(x_admin_token, settings.admin_token):
         raise HTTPException(status_code=401, detail="Invalid or missing X-Admin-Token")
 
-    background_tasks.add_task(run_refresh_task)
+    background_tasks.add_task(_sync_refresh)
     return {
         "status": "refresh_scheduled",
         "message": "Results and models refresh started in background",

@@ -1,213 +1,225 @@
 import { useState, useMemo } from 'react';
 import HalfPitch from './pitch/HalfPitch';
+import InfoButton from './InfoButton';
+import Legend from './Legend';
 
-const OUTCOME_CONFIG = {
-  goal: { label: 'Goal', color: '#fbbf24', border: '#ffffff' },
-  saved: { label: 'On Target', color: '#38bdf8', border: '#bae6fd' },
-  missed: { label: 'Off Target', color: '#f43f5e', border: '#fecdd3' },
-  blocked: { label: 'Blocked', color: '#94a3b8', border: '#cbd5e1' },
-};
+const INFO_TEXT =
+  'Each circle is a shot, placed where it was taken from. Bigger circle = better chance. Filled = goal.';
 
-export default function ShotMap({ match, shots = [] }) {
-  const [selectedTeam, setSelectedTeam] = useState('all');
-  const [selectedPlayer, setSelectedPlayer] = useState('all');
-  const [hoveredShot, setHoveredShot] = useState(null);
+function formatOutcome(outcome) {
+  if (!outcome) return 'Shot';
+  switch (outcome.toLowerCase()) {
+    case 'goal':
+      return 'Goal';
+    case 'saved':
+      return 'Saved';
+    case 'blocked':
+      return 'Blocked';
+    case 'missed':
+      return 'Missed';
+    case 'woodwork':
+      return 'Hit woodwork';
+    default:
+      return outcome;
+  }
+}
 
+export default function ShotMap({
+  shots = [],
+  match = {},
+  colors = { home: '#00ff87', away: '#00f2fe', draw: '#64748b' },
+}) {
   const home = match?.home || {};
   const away = match?.away || {};
 
-  // Unique players list
-  const players = useMemo(() => {
-    const map = new Map();
-    shots.forEach((s) => {
-      if (s.player_name) {
-        map.set(s.player_name, {
-          name: s.player_name,
-          teamId: s.team_id,
-        });
-      }
-    });
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [shots]);
+  const [selectedTeam, setSelectedTeam] = useState('all');
 
-  // Filter shots
+  const homeShotsCount = useMemo(
+    () => shots.filter((s) => String(s.team_id) === String(home.id)).length,
+    [shots, home.id]
+  );
+  const awayShotsCount = useMemo(
+    () => shots.filter((s) => String(s.team_id) === String(away.id)).length,
+    [shots, away.id]
+  );
+
   const filteredShots = useMemo(() => {
-    return shots.filter((s) => {
-      if (selectedTeam !== 'all' && s.team_id !== selectedTeam) {
-        return false;
-      }
-      if (selectedPlayer !== 'all' && s.player_name !== selectedPlayer) {
-        return false;
-      }
-      return true;
-    });
-  }, [shots, selectedTeam, selectedPlayer]);
+    if (selectedTeam === 'all') return shots;
+    return shots.filter((s) => String(s.team_id) === String(selectedTeam));
+  }, [shots, selectedTeam]);
 
-  // Summary stats for filtered shots
-  const stats = useMemo(() => {
-    const totalShots = filteredShots.length;
-    const goals = filteredShots.filter((s) => s.outcome === 'goal').length;
-    const onTarget = filteredShots.filter(
-      (s) => s.outcome === 'goal' || s.outcome === 'saved'
-    ).length;
-    const totalXg = filteredShots.reduce((acc, s) => acc + (s.xg || 0), 0);
-    return { totalShots, goals, onTarget, totalXg };
+  // Default selected shot: highest xG goal, or highest xG shot, or first shot
+  const defaultShot = useMemo(() => {
+    if (filteredShots.length === 0) return null;
+    const goals = filteredShots.filter((s) => s.outcome === 'goal');
+    if (goals.length > 0) {
+      return goals.slice().sort((a, b) => (b.xg || 0) - (a.xg || 0))[0];
+    }
+    return filteredShots.slice().sort((a, b) => (b.xg || 0) - (a.xg || 0))[0];
   }, [filteredShots]);
 
+  const [tappedShot, setTappedShot] = useState(null);
+  const activeShot = tappedShot || defaultShot;
+
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg backdrop-blur-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
-            Shot Map
-          </h3>
-          <p className="text-xs text-slate-500">
-            Dot size indicates xG value. Attacking towards right goal.
-          </p>
-        </div>
-
-        {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Team Filter */}
-          <select
-            value={selectedTeam}
-            onChange={(e) => {
-              setSelectedTeam(e.target.value);
-              setSelectedPlayer('all');
-            }}
-            className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none"
-          >
-            <option value="all">All Teams</option>
-            {home.id && <option value={home.id}>{home.name || 'Home'}</option>}
-            {away.id && <option value={away.id}>{away.name || 'Away'}</option>}
-          </select>
-
-          {/* Player Filter */}
-          <select
-            value={selectedPlayer}
-            onChange={(e) => setSelectedPlayer(e.target.value)}
-            className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none max-w-[150px] truncate"
-          >
-            <option value="all">All Players</option>
-            {players
-              .filter((p) => selectedTeam === 'all' || p.teamId === selectedTeam)
-              .map((p) => (
-                <option key={p.name} value={p.name}>
-                  {p.name}
-                </option>
-              ))}
-          </select>
-        </div>
+    <div className="analytics-card">
+      <div className="analytics-card-header">
+        <h3 className="analytics-card-title">Shot Map</h3>
+        <InfoButton text={INFO_TEXT} />
       </div>
 
-      {/* Metrics Strip */}
-      <div className="grid grid-cols-4 gap-2 mb-4 text-center">
-        <div className="rounded-lg bg-slate-800/40 p-2 border border-slate-700/40">
-          <span className="block text-[10px] text-slate-500 uppercase">Shots</span>
-          <span className="text-base font-bold text-slate-200">{stats.totalShots}</span>
-        </div>
-        <div className="rounded-lg bg-slate-800/40 p-2 border border-slate-700/40">
-          <span className="block text-[10px] text-slate-500 uppercase">Goals</span>
-          <span className="text-base font-bold text-amber-400">{stats.goals}</span>
-        </div>
-        <div className="rounded-lg bg-slate-800/40 p-2 border border-slate-700/40">
-          <span className="block text-[10px] text-slate-500 uppercase">On Target</span>
-          <span className="text-base font-bold text-sky-400">{stats.onTarget}</span>
-        </div>
-        <div className="rounded-lg bg-slate-800/40 p-2 border border-slate-700/40">
-          <span className="block text-[10px] text-slate-500 uppercase">Total xG</span>
-          <span className="text-base font-bold text-emerald-400 font-mono">
-            {stats.totalXg.toFixed(2)}
-          </span>
-        </div>
+      <Legend
+        teamA={{ name: home.name || 'Home', color: colors.home }}
+        teamB={{ name: away.name || 'Away', color: colors.away }}
+      />
+
+      {/* Filter Chips */}
+      <div className="shots-filter-chips" role="group" aria-label="Filter shots by team">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedTeam('all');
+            setTappedShot(null);
+          }}
+          className={`filter-chip ${selectedTeam === 'all' ? 'active' : ''}`}
+        >
+          Both teams ({shots.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedTeam(home.id);
+            setTappedShot(null);
+          }}
+          className={`filter-chip ${selectedTeam === home.id ? 'active' : ''}`}
+        >
+          {home.name || 'Home'} ({homeShotsCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedTeam(away.id);
+            setTappedShot(null);
+          }}
+          className={`filter-chip ${selectedTeam === away.id ? 'active' : ''}`}
+        >
+          {away.name || 'Away'} ({awayShotsCount})
+        </button>
       </div>
 
-      {/* Pitch with Shots */}
-      <div className="relative">
+      {/* Half Pitch View */}
+      <div className="shot-pitch-stage">
         <HalfPitch>
           {filteredShots.map((shot) => {
             const svgX = shot.x * 1.05;
             const svgY = (100 - shot.y) * 0.68;
-            const config = OUTCOME_CONFIG[shot.outcome] || OUTCOME_CONFIG.missed;
-            const radius = Math.max(1.1, Math.min(3.2, 1.1 + (shot.xg || 0) * 3.2));
-            const isHovered = hoveredShot?.id === shot.id;
+            const isHomeShot = String(shot.team_id) === String(home.id);
+            const teamColor = isHomeShot ? colors.home : colors.away;
+            const radius = Math.max(1.8, Math.min(5.5, 1.8 + (shot.xg || 0) * 4.5));
+            const isSelected = activeShot?.id === shot.id;
+            const outcome = (shot.outcome || '').toLowerCase();
 
             return (
               <g
                 key={shot.id}
-                className="cursor-pointer transition-transform duration-200"
-                onMouseEnter={() => setHoveredShot(shot)}
-                onMouseLeave={() => setHoveredShot(null)}
-                onClick={() => setHoveredShot(shot)}
+                className="shot-symbol"
+                tabIndex={0}
+                role="button"
+                aria-label={`${shot.player_name || 'Player'}, minute ${shot.minute}, ${outcome}, ${Math.round((shot.xg || 0) * 100)}% chance`}
+                onClick={() => setTappedShot(shot)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setTappedShot(shot);
+                  }
+                }}
               >
-                {/* Glow ring on hover or goal */}
-                {(isHovered || shot.outcome === 'goal') && (
+                {/* Active Selection Glow / Ring */}
+                {isSelected && (
                   <circle
                     cx={svgX}
                     cy={svgY}
-                    r={radius + (isHovered ? 1.5 : 0.8)}
+                    r={radius + 2.0}
                     fill="none"
-                    stroke={config.color}
-                    strokeWidth={0.5}
-                    opacity={0.8}
-                    className="animate-pulse"
+                    stroke="#ffffff"
+                    strokeWidth={1.2}
+                    opacity={0.9}
                   />
                 )}
-                {/* Shot dot */}
-                <circle
-                  cx={svgX}
-                  cy={svgY}
-                  r={radius}
-                  fill={config.color}
-                  stroke={config.border}
-                  strokeWidth={0.4}
-                />
+
+                {/* Shot Symbol by outcome */}
+                {outcome === 'goal' ? (
+                  // Filled circle for goal
+                  <circle
+                    cx={svgX}
+                    cy={svgY}
+                    r={radius}
+                    fill={teamColor}
+                    stroke="#ffffff"
+                    strokeWidth={0.8}
+                  />
+                ) : outcome === 'saved' ? (
+                  // Open circle for saved
+                  <circle
+                    cx={svgX}
+                    cy={svgY}
+                    r={radius}
+                    fill="transparent"
+                    stroke={teamColor}
+                    strokeWidth={1.5}
+                  />
+                ) : (
+                  // Muted dot for missed / blocked / woodwork
+                  <circle
+                    cx={svgX}
+                    cy={svgY}
+                    r={Math.max(1.3, radius * 0.7)}
+                    fill={teamColor}
+                    opacity={0.45}
+                  />
+                )}
               </g>
             );
           })}
         </HalfPitch>
-
-        {/* Hover Tooltip Overlay */}
-        {hoveredShot && (
-          <div className="absolute bottom-2 left-2 right-2 max-w-sm mx-auto rounded-xl border border-slate-700 bg-slate-900/95 p-3 text-xs shadow-2xl backdrop-blur-md transition-all">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
-              <span className="font-bold text-slate-200">
-                {hoveredShot.player_name || 'Unknown Player'} ({hoveredShot.team_name})
-              </span>
-              <span className="font-mono text-emerald-400 font-bold">
-                {Number(hoveredShot.xg).toFixed(2)} xG
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 mb-1.5">
-              <div>Minute: <span className="text-slate-200">{hoveredShot.minute}&apos;</span></div>
-              <div>Outcome: <span className="font-semibold text-slate-200 uppercase text-[10px]">{hoveredShot.outcome}</span></div>
-              <div>Body part: <span className="text-slate-200 capitalize">{hoveredShot.body_part?.replace('_', ' ') || 'Foot'}</span></div>
-              <div>Situation: <span className="text-slate-200 capitalize">{hoveredShot.situation?.replace('_', ' ') || 'Open play'}</span></div>
-            </div>
-            {hoveredShot.text && (
-              <p className="text-[11px] text-slate-400 italic line-clamp-2">
-                &ldquo;{hoveredShot.text}&rdquo;
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
-        {Object.entries(OUTCOME_CONFIG).map(([key, item]) => (
-          <div key={key} className="flex items-center gap-1.5">
-            <span
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: item.color }}
-            />
-            <span>{item.label}</span>
-          </div>
-        ))}
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <span>(Size = xG chance)</span>
+      {/* Legend & Size explanation */}
+      <div className="shot-map-legend">
+        <div className="shot-legend-items">
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '13px' }}>●</span> Goal
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '13px' }}>○</span> Saved
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '13px' }}>·</span> Missed/blocked
+          </span>
         </div>
+        <div>Bigger circle = better chance</div>
       </div>
+
+      {/* Tapped Shot Detail Card */}
+      {activeShot ? (
+        <div className="shot-detail-card" aria-live="polite">
+          <div className="shot-detail-title">
+            {activeShot.minute}&apos; {activeShot.player_name || 'Player'} ({activeShot.team_name || ''}) ·{' '}
+            {formatOutcome(activeShot.outcome)}
+          </div>
+          <div className="shot-detail-meta">
+            {Math.round(activeShot.distance || 0)} m from goal ·{' '}
+            {Math.round((activeShot.xg || 0) * 100)}% chance
+            {activeShot.body_part ? ` · ${activeShot.body_part.replace('_', ' ')}` : ''}
+          </div>
+        </div>
+      ) : (
+        <div className="shot-detail-card">
+          <div className="shot-detail-meta" style={{ textAlign: 'center' }}>
+            Tap any shot on the pitch to see details
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -142,9 +142,9 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
           <button 
             className={`nav-tab-btn ${activeTab === 'replay' ? 'active' : ''}`}
             onClick={() => setActiveTab('replay')}
-            title="Tactical 2D Player Tracking Replay"
+            title="Tactical 2D Player Tracking Replay Demo"
           >
-            <PlayCircle size={18} color="#00ff87" /> Tactical Replay
+            <PlayCircle size={18} color="#00ff87" /> Replay demo
           </button>
         </div>
 

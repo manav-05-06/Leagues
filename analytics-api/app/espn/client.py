@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 
 ESPN_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/all"
 
-# In-memory TTL cache for responses (up to 1000 items, default 20s TTL)
+# In-memory TTL cache for responses (live: 20s TTL, finished: 24h TTL)
 _summary_cache: TTLCache = TTLCache(maxsize=1000, ttl=settings.cache_live_ttl)
+_finished_summary_cache: TTLCache = TTLCache(maxsize=1000, ttl=settings.cache_finished_ttl)
 
 # Persistent stale fallback cache so 429/5xx serves the last known good data
 _stale_cache: dict[str, dict[str, Any]] = {}
@@ -51,12 +52,16 @@ async def close_http_client() -> None:
 
 async def fetch_json(url: str) -> dict[str, Any]:
     """Fetch a JSON URL from ESPN with request merging, concurrency limits, and stale-while-error fallback."""
-    # 1. Check TTL cache
+    # 1. Check finished and live TTL caches
+    if url in _finished_summary_cache:
+        return _finished_summary_cache[url]
     if url in _summary_cache:
         return _summary_cache[url]
 
     # 2. Check if another coroutine is already fetching this exact URL
     async with _inflight_lock:
+        if url in _finished_summary_cache:
+            return _finished_summary_cache[url]
         if url in _summary_cache:
             return _summary_cache[url]
 
@@ -98,8 +103,18 @@ async def _do_fetch(
                     response.raise_for_status()
                     data = response.json()
 
-                    # Cache successful response in both TTL and stale backup
-                    _summary_cache[url] = data
+                    # Cache successful response (24h if finished, 20s if live)
+                    state = (
+                        data.get("header", {})
+                        .get("competitions", [{}])[0]
+                        .get("status", {})
+                        .get("type", {})
+                        .get("state")
+                    )
+                    if state == "post":
+                        _finished_summary_cache[url] = data
+                    else:
+                        _summary_cache[url] = data
                     _stale_cache[url] = data
 
                     if not future.done():

@@ -76,7 +76,18 @@ def backtest_league(
     print(f"\n--- Backtesting {league} ---")
     print(f"Initial training: {len(train_init)} matches, Test set: {len(test_matches)} matches")
 
-    # Historical league base rates from training set
+    # Overall league base rates from all matches in results.db
+    n_all = len(all_matches)
+    league_base_h = sum(1 for m in all_matches if m["home_goals"] > m["away_goals"]) / n_all
+    league_base_d = sum(1 for m in all_matches if m["home_goals"] == m["away_goals"]) / n_all
+    league_base_a = sum(1 for m in all_matches if m["home_goals"] < m["away_goals"]) / n_all
+    base_rates = {
+        "home": round(league_base_h, 4),
+        "draw": round(league_base_d, 4),
+        "away": round(league_base_a, 4),
+    }
+
+    # Historical league base rates from training set (for baselines)
     h_wins = sum(1 for m in train_init if m["home_goals"] > m["away_goals"])
     draws = sum(1 for m in train_init if m["home_goals"] == m["away_goals"])
     a_wins = sum(1 for m in train_init if m["home_goals"] < m["away_goals"])
@@ -85,28 +96,80 @@ def backtest_league(
     base_d = draws / total_train
     base_a = a_wins / total_train
 
-    # Fit model on training set
+    # Fit model on training set (raw, without shrink)
     model = DixonColesModel(league=league)
     model.fit(train_init)
 
+    # 1. Collect raw predictions on test set
+    raw_evals = []
+    for m in test_matches:
+        hg = m["home_goals"]
+        ag = m["away_goals"]
+        actual = "home" if hg > ag else ("draw" if hg == ag else "away")
+        pred = model.predict_match(m["home_id"], m["away_id"])
+        ph = pred["win_probability"]["home"]
+        pd = pred["win_probability"]["draw"]
+        pa = pred["win_probability"]["away"]
+        raw_evals.append((ph, pd, pa, actual))
+
+    # 2. Learn optimal shrink factor k in [0.00, 0.50] minimizing log loss
+    best_k = 0.0
+    min_log_loss = float("inf")
+
+    for k in np.linspace(0.00, 0.50, 51):
+        k_val = round(float(k), 2)
+        losses = []
+        for ph, pd, pa, actual in raw_evals:
+            p_h = (1.0 - k_val) * ph + k_val * league_base_h
+            p_d = (1.0 - k_val) * pd + k_val * league_base_d
+            p_a = (1.0 - k_val) * pa + k_val * league_base_a
+            tot = p_h + p_d + p_a
+            losses.append(calculate_log_loss(p_h / tot, p_d / tot, p_a / tot, actual))
+        mean_loss = float(np.mean(losses))
+        if mean_loss < min_log_loss:
+            min_log_loss = mean_loss
+            best_k = k_val
+
+    print(f"Optimal shrink factor k: {best_k:.2f} (Log loss: {min_log_loss:.4f})")
+
+    # Update saved ratings file for this league with shrink_k and base_rates
+    ratings_file = ARTIFACTS_DIR / f"ratings_{league}.json"
+    if ratings_file.exists():
+        league_model = DixonColesModel.load(ratings_file)
+        league_model.shrink_k = best_k
+        league_model.base_rates = base_rates
+        league_model.save(ratings_file)
+        print(f"Updated {ratings_file.name} with shrink_k={best_k:.2f}")
+
+    # 3. Calculate evaluation metrics with shrunk probabilities
     dc_rps_list, base_rps_list, unif_rps_list = [], [], []
     dc_brier_list, base_brier_list = [], []
     dc_ll_list, base_ll_list = [], []
+    model_hits = []
+    always_home_hits = []
 
     calibration_bins = [
         {"bin": f"{i * 20}-{(i + 1) * 20}%", "pred": [], "obs": []} for i in range(5)
     ]
 
-    for m in test_matches:
-        hg = m["home_goals"]
-        ag = m["away_goals"]
-        actual = "home" if hg > ag else ("draw" if hg == ag else "away")
+    for ph_raw, pd_raw, pa_raw, actual in raw_evals:
+        # Shrunk probabilities
+        ph = (1.0 - best_k) * ph_raw + best_k * league_base_h
+        pd = (1.0 - best_k) * pd_raw + best_k * league_base_d
+        pa = (1.0 - best_k) * pa_raw + best_k * league_base_a
+        tot = ph + pd + pa
+        ph, pd, pa = ph / tot, pd / tot, pa / tot
 
-        # Dixon-Coles prediction
-        pred = model.predict_match(m["home_id"], m["away_id"])
-        ph = pred["win_probability"]["home"]
-        pd = pred["win_probability"]["draw"]
-        pa = pred["win_probability"]["away"]
+        # Most likely outcome prediction
+        if ph >= pd and ph >= pa:
+            pred_outcome = "home"
+        elif pa >= pd and pa >= ph:
+            pred_outcome = "away"
+        else:
+            pred_outcome = "draw"
+
+        model_hits.append(1.0 if pred_outcome == actual else 0.0)
+        always_home_hits.append(1.0 if actual == "home" else 0.0)
 
         # 1. RPS
         dc_rps_list.append(calculate_rps(ph, pd, actual))
@@ -143,9 +206,16 @@ def backtest_league(
                 }
             )
 
+    hit_rate = round(float(np.mean(model_hits)), 4)
+    always_home_hit_rate = round(float(np.mean(always_home_hits)), 4)
+
     results = {
         "league": league,
         "test_matches": len(test_matches),
+        "shrink_k": best_k,
+        "base_rates": base_rates,
+        "hit_rate": hit_rate,
+        "always_home_hit_rate": always_home_hit_rate,
         "dixon_coles": {
             "rps": round(float(np.mean(dc_rps_list)), 4),
             "brier": round(float(np.mean(dc_brier_list)), 4),
@@ -177,8 +247,17 @@ def backtest_league(
     print(
         f"Dixon-Coles Brier: {results['dixon_coles']['brier']} vs Base-rate: {results['baselines']['league_base_rate']['brier']}"
     )
+    print(f"Hit Rate: {hit_rate * 100:.1f}% vs Always Home: {always_home_hit_rate * 100:.1f}%")
+    for cal in calib_summary:
+        print(
+            f"  Bin {cal['bin']:<8} Pred: {cal['predicted']:.3f} Obs: {cal['observed']:.3f} Err: {cal['error']:+.3f}"
+        )
 
     return results
+
+
+def run():
+    main()
 
 
 def main():

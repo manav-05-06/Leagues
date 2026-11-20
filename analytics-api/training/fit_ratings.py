@@ -26,6 +26,10 @@ def load_league_matches(conn: sqlite3.Connection, league: str) -> list[dict]:
     return [dict(r) for r in cur.fetchall()]
 
 
+def run():
+    main()
+
+
 def main():
     if not DB_PATH.exists():
         raise FileNotFoundError(f"{DB_PATH} not found. Run backfill_results.py first.")

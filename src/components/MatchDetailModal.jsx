@@ -294,73 +294,29 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
         </div>
 
         {/* Overview vs Analytics Tab Switcher */}
-        <div className="match-tabs-bar" style={{ display: 'flex', justifyContent: 'center', margin: '1.25rem 0', padding: '0 1rem' }}>
-          <div style={{
-            display: 'flex',
-            backgroundColor: 'rgba(30, 41, 59, 0.85)',
-            padding: '4px',
-            borderRadius: '12px',
-            border: '1px solid rgba(51, 65, 85, 0.6)',
-            width: '100%',
-            maxWidth: '320px',
-            gap: '4px'
-          }}>
+        <div className="modal-tab-switch-wrap">
+          <div className="modal-tab-switch-pill">
             <button
               type="button"
+              className={`modal-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
               onClick={() => setActiveTab('overview')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: activeTab === 'overview' ? '700' : '500',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: activeTab === 'overview' ? 'var(--accent-primary, #00ff87)' : 'transparent',
-                color: activeTab === 'overview' ? '#0f172a' : '#94a3b8',
-              }}
             >
               Overview
             </button>
             <button
               type="button"
+              className={`modal-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
               onClick={() => setActiveTab('analytics')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: activeTab === 'analytics' ? '700' : '500',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-                backgroundColor: activeTab === 'analytics' ? 'var(--accent-primary, #00ff87)' : 'transparent',
-                color: activeTab === 'analytics' ? '#0f172a' : '#94a3b8',
-              }}
             >
               <BarChart2 size={14} />
               <span>Analytics</span>
-              <span style={{
-                fontSize: '0.65rem',
-                padding: '1px 4px',
-                borderRadius: '4px',
-                backgroundColor: activeTab === 'analytics' ? 'rgba(15, 23, 42, 0.25)' : 'rgba(0, 255, 135, 0.15)',
-                color: activeTab === 'analytics' ? '#0f172a' : '#00ff87',
-                fontWeight: 700
-              }}>
-                xG
-              </span>
+              <span className="modal-tab-tag">xG</span>
             </button>
           </div>
         </div>
 
         {activeTab === 'analytics' ? (
-          <div style={{ padding: '0.5rem 1rem 2rem' }}>
+          <div className="analytics-tab-wrapper">
             <AnalyticsTab match={match} onPlayerClick={onPlayerClick} />
           </div>
         ) : (

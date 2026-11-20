@@ -230,7 +230,7 @@ export default function ReplayPage({ initialMatchId = null }) {
       <div className="replay-header-panel">
         <div className="replay-title-wrap">
           <div className="replay-live-badge">
-            <Radio size={14} className="pulse-icon" /> TACTICAL 2D REPLAY
+            <Radio size={14} className="pulse-icon" /> REPLAY DEMO
           </div>
           <div className="match-selector-dropdown-wrap">
             <select
@@ -268,6 +268,13 @@ export default function ReplayPage({ initialMatchId = null }) {
               />
             </div>
           </div>
+        )}
+      </div>
+
+      <div className="replay-intro-banner">
+        <p>Watch how players moved in a sample A-League match. Live player tracking isn&apos;t available for free, so this uses open sample data.</p>
+        {overlays.voronoi && (
+          <p className="replay-voronoi-note">Each colour shows the area a team&apos;s player can reach first.</p>
         )}
       </div>
 

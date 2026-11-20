@@ -11,10 +11,29 @@
  */
 export default function GoalMouth({ children, className = '' }) {
   return (
-    <div className={`relative w-full aspect-[120/70] max-w-md mx-auto overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/80 shadow-inner select-none ${className}`}>
+    <div
+      className={`goal-mouth-stage ${className}`}
+      style={{
+        position: 'relative',
+        width: '100%',
+        aspectRatio: '120 / 70',
+        maxWidth: '440px',
+        margin: '0 auto',
+        overflow: 'hidden',
+        borderRadius: '10px',
+        border: '1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08))',
+        background: 'rgba(10, 28, 19, 0.85)',
+        userSelect: 'none',
+      }}
+    >
       <svg
         viewBox="0 0 120 70"
-        className="w-full h-full text-slate-400"
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          color: 'rgba(255, 255, 255, 0.25)',
+        }}
         fill="none"
       >
         {/* Net pattern */}
@@ -31,18 +50,14 @@ export default function GoalMouth({ children, className = '' }) {
         {/* Net inside the goal */}
         <rect x="25" y="18" width="70" height="40" fill="url(#net-grid)" />
 
-        {/* Goal Frame */}
-        {/* Shadow / depth */}
+        {/* Goal Frame Depth */}
         <polygon points="25,18 20,24 20,58 25,58" fill="rgba(255,255,255,0.03)" />
         <polygon points="95,18 100,24 100,58 95,58" fill="rgba(255,255,255,0.03)" />
         <polygon points="25,18 20,24 100,24 95,18" fill="rgba(255,255,255,0.05)" />
 
         {/* White Goal Posts and Crossbar */}
-        {/* Left Post */}
         <line x1="25" y1="18" x2="25" y2="58" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" />
-        {/* Right Post */}
         <line x1="95" y1="18" x2="95" y2="58" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" />
-        {/* Crossbar */}
         <line x1="24.2" y1="18" x2="95.8" y2="18" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" />
 
         {/* Subtle post reflections */}

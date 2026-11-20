@@ -1,8 +1,8 @@
 # Leagues Match Analytics API Dockerfile
 FROM python:3.12-slim
 
-# Install uv package manager
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+# Install uv package manager (pinned version)
+COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /bin/uv
 
 WORKDIR /app
 
@@ -17,8 +17,9 @@ COPY pyproject.toml uv.lock ./
 # Install frozen dependencies without dev packages
 RUN uv sync --frozen --no-dev
 
-# Copy application source, trained artifacts, and replay tracking data
+# Copy application source, training scripts, trained artifacts, and replay tracking data
 COPY app/ ./app/
+COPY training/ ./training/
 COPY artifacts/ ./artifacts/
 COPY data/replay/ ./data/replay/
 COPY data/results.db ./data/results.db

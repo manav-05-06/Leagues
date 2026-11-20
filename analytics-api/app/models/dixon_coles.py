@@ -39,6 +39,8 @@ class DixonColesModel:
         self.defence: np.ndarray = np.array([])
         self.home_adv: float = 0.25
         self.rho: float = -0.05
+        self.shrink_k: float = 0.0
+        self.base_rates: dict[str, float] = {}
         self.last_trained: str | None = None
 
     def fit(self, matches: list[dict[str, Any]]) -> "DixonColesModel":
@@ -186,6 +188,21 @@ class DixonColesModel:
         draw = float(np.sum(np.diag(grid)))
         away_win = float(np.sum(np.triu(grid, 1)))
 
+        # Apply calibration shrink towards league base rates if configured
+        if self.shrink_k > 0.0 and self.base_rates:
+            k = self.shrink_k
+            br_h = self.base_rates.get("home", 0.3333)
+            br_d = self.base_rates.get("draw", 0.3333)
+            br_a = self.base_rates.get("away", 0.3333)
+            home_win = (1.0 - k) * home_win + k * br_h
+            draw = (1.0 - k) * draw + k * br_d
+            away_win = (1.0 - k) * away_win + k * br_a
+            tot = home_win + draw + away_win
+            if tot > 0:
+                home_win /= tot
+                draw /= tot
+                away_win /= tot
+
         # Over 2.5 goals
         over_25 = 0.0
         btts = 0.0
@@ -242,6 +259,8 @@ class DixonColesModel:
             "xi": self.xi,
             "home_adv": round(self.home_adv, 4),
             "rho": round(self.rho, 4),
+            "shrink_k": round(self.shrink_k, 4),
+            "base_rates": {k: round(v, 4) for k, v in self.base_rates.items()},
             "last_trained": self.last_trained,
             "teams": self.teams,
             "team_names": self.team_names,
@@ -262,6 +281,8 @@ class DixonColesModel:
         model = cls(league=data["league"], xi=data.get("xi", 0.0019))
         model.home_adv = float(data["home_adv"])
         model.rho = float(data["rho"])
+        model.shrink_k = float(data.get("shrink_k", 0.0))
+        model.base_rates = data.get("base_rates", {})
         model.last_trained = data.get("last_trained")
         model.teams = data["teams"]
         model.team_indices = {t: i for i, t in enumerate(model.teams)}

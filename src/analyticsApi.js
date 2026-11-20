@@ -13,10 +13,19 @@ export async function fetchMatchAnalytics(eventId) {
   return res.json();
 }
 
-export async function fetchPrematchPrediction({ league, home, away }) {
-  const params = new URLSearchParams({ league, home, away });
+export async function fetchPrematchPrediction({ league, home, away, homeId, awayId }) {
+  const params = new URLSearchParams();
+  if (league) params.append('league', league);
+  if (homeId) params.append('home_id', String(homeId));
+  else if (home) params.append('home', home);
+  if (awayId) params.append('away_id', String(awayId));
+  else if (away) params.append('away', away);
+
   const res = await fetch(`${BASE}/predict/prematch?${params.toString()}`);
   if (!res.ok) {
+    if (res.status === 404) {
+      return null;
+    }
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.detail || `Failed to fetch prematch prediction (${res.status})`);
   }
