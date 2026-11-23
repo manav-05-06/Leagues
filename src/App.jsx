@@ -16,6 +16,7 @@ const PlayerProfileModal = lazy(() => import("./components/PlayerProfileModal"))
 const LiveMatchesModal = lazy(() => import("./components/LiveMatchesModal"));
 const TeamSidePanel = lazy(() => import("./components/TeamSidePanel"));
 const ReplayPage = lazy(() => import("./components/replay/ReplayPage"));
+const TacticsBoard = lazy(() => import("./components/tactics/TacticsBoard"));
 
 function App() {
   // 1. Get our UI state from Zustand with shallow selector
@@ -86,17 +87,23 @@ function App() {
     setTeamSearchQuery("");
   }, [selectedLeague, selectedSeason, selectedDate]);
 
-  // Sync /replay hash route with activeTab
+  // Sync /replay and #tactics hash routes with activeTab
   useEffect(() => {
     if (window.location.hash === '#replay') {
       setActiveTab('replay');
+    } else if (window.location.hash.startsWith('#tactics')) {
+      setActiveTab('tactics');
     }
   }, [setActiveTab]);
 
   useEffect(() => {
     if (activeTab === 'replay') {
       window.location.hash = 'replay';
-    } else if (window.location.hash === '#replay') {
+    } else if (activeTab === 'tactics') {
+      if (!window.location.hash.startsWith('#tactics')) {
+        window.location.hash = 'tactics';
+      }
+    } else if (window.location.hash === '#replay' || window.location.hash.startsWith('#tactics')) {
       history.replaceState(null, '', ' ');
     }
   }, [activeTab]);
@@ -461,6 +468,16 @@ function App() {
             </div>
           }>
             <ReplayPage />
+          </Suspense>
+        )}
+
+        {activeTab === "tactics" && (
+          <Suspense fallback={
+            <div className="content-layout" style={{ minHeight: 450, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="replay-spinner" />
+            </div>
+          }>
+            <TacticsBoard />
           </Suspense>
         )}
       </main>

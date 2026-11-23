@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { getFormationCoordinates } from './formations';
+import { getFormationCoordinates } from '../../constants/formations';
 
 export default function LineupPitch({
   rosters = [],

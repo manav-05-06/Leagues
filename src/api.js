@@ -1,4 +1,4 @@
-import { ALL_LEAGUES, SUPPORTED_LEAGUES } from './constants/leagues';
+import { ALL_LEAGUES, SUPPORTED_LEAGUES } from './constants/leagues.js';
 
 export function formatKickoff(dateStr) {
   if (!dateStr) return '';
@@ -477,5 +477,209 @@ export async function fetchLeagueStandings(leagueSlug = 'eng.1', season) {
     leagueName: data.name || 'Official Standings',
     season: data.season || season,
     groups,
+  };
+}
+
+/**
+ * Tactics Board Fetchers
+ */
+
+export async function fetchLeagueTeams(slug) {
+  if (!slug) return [];
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/teams`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`ESPN API returned ${res.status}`);
+  }
+  const data = await res.json();
+  const rawTeams = data.sports?.[0]?.leagues?.[0]?.teams || [];
+
+  const teams = rawTeams.map((t) => {
+    const team = t.team || t;
+    const color = team.color ? (team.color.startsWith('#') ? team.color : `#${team.color}`) : '#00ff87';
+    const altColor = team.alternateColor ? (team.alternateColor.startsWith('#') ? team.alternateColor : `#${team.alternateColor}`) : null;
+    return {
+      id: String(team.id),
+      name: team.displayName || team.name || '',
+      short: team.abbreviation || team.shortDisplayName || '',
+      color,
+      altColor,
+      logo: team.logos?.[0]?.href || '',
+    };
+  });
+
+  teams.sort((a, b) => a.name.localeCompare(b.name));
+  return teams;
+}
+
+export async function fetchTeamSquad(slug, teamId) {
+  if (!slug || !teamId) return [];
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/teams/${teamId}/roster`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`ESPN API returned ${res.status}`);
+  }
+  const data = await res.json();
+
+  let athletesArray = [];
+  if (data.athletes && Array.isArray(data.athletes)) {
+    if (data.athletes[0]?.items) {
+      data.athletes.forEach((group) => {
+        if (Array.isArray(group.items)) {
+          athletesArray = athletesArray.concat(group.items);
+        }
+      });
+    } else {
+      athletesArray = data.athletes;
+    }
+  }
+
+  return athletesArray.map((athlete) => {
+    const fullName = athlete.displayName || athlete.fullName || athlete.name || '';
+    const words = fullName.trim().split(/\s+/);
+    const shortName = (words[words.length - 1] || fullName).slice(0, 12);
+
+    let rawPos = (athlete.position?.abbreviation || '').toUpperCase();
+    let pos = 'M';
+    if (rawPos.startsWith('G')) pos = 'G';
+    else if (rawPos.startsWith('D')) pos = 'D';
+    else if (rawPos.startsWith('M')) pos = 'M';
+    else if (rawPos.startsWith('F')) pos = 'F';
+
+    return {
+      id: String(athlete.id),
+      name: fullName,
+      shortName,
+      jersey: athlete.jersey != null ? String(athlete.jersey) : '',
+      pos,
+    };
+  });
+}
+
+export async function fetchTeamLastLineup(slug, teamId) {
+  if (!slug || !teamId) return null;
+  const schedUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${slug}/teams/${teamId}/schedule`;
+  const schedRes = await fetch(schedUrl);
+  if (!schedRes.ok) return null;
+  const schedData = await schedRes.json();
+
+  const events = schedData.events || [];
+  const completedEvents = events.filter((e) => {
+    const comp = e.competitions?.[0];
+    const statusType = comp?.status?.type || {};
+    return Boolean(statusType.completed) || statusType.state === 'post';
+  });
+
+  if (completedEvents.length === 0) return null;
+
+  // Sort newest first
+  completedEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const latestMatch = completedEvents[0];
+  const comp = latestMatch.competitions?.[0] || {};
+  const competitors = comp.competitors || [];
+
+  const teamComp = competitors.find((c) => String(c.id) === String(teamId) || String(c.team?.id) === String(teamId));
+  const oppComp = competitors.find((c) => String(c.id) !== String(teamId) && String(c.team?.id) !== String(teamId));
+
+  const opponent = oppComp?.team?.displayName || oppComp?.team?.name || 'Opponent';
+  const teamScore = teamComp?.score?.displayValue ?? teamComp?.score ?? '0';
+  const oppScore = oppComp?.score?.displayValue ?? oppComp?.score ?? '0';
+  const score = `${teamScore}-${oppScore}`;
+
+  // Formatted date (e.g. "29 Oct")
+  let dateStr = '';
+  if (latestMatch.date) {
+    const d = new Date(latestMatch.date);
+    if (!isNaN(d.getTime())) {
+      dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    }
+  }
+
+  // Fetch summary to extract roster and formation
+  const summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/all/summary?event=${latestMatch.id}`;
+  const summaryRes = await fetch(summaryUrl);
+  if (!summaryRes.ok) return null;
+  const summaryData = await summaryRes.json();
+
+  const rosters = summaryData.rosters || [];
+  const teamRoster = rosters.find(
+    (r) => String(r.team?.id) === String(teamId)
+  );
+
+  if (!teamRoster || !Array.isArray(teamRoster.roster)) return null;
+
+  const starters = [];
+  teamRoster.roster.forEach((p) => {
+    const slot = Number(p.formationPlace);
+    if (p.starter || (!isNaN(slot) && slot >= 1 && slot <= 11)) {
+      starters.push({
+        id: String(p.athlete?.id || p.id),
+        name: p.athlete?.displayName || p.athlete?.fullName || p.athlete?.name || '',
+        jersey: String(p.jersey || ''),
+        slot: isNaN(slot) ? starters.length + 1 : slot,
+      });
+    }
+  });
+
+  if (starters.length === 0) return null;
+  starters.sort((a, b) => a.slot - b.slot);
+
+  return {
+    eventId: String(latestMatch.id),
+    date: dateStr,
+    opponent,
+    score,
+    formation: teamRoster.formation || '4-3-3',
+    starters,
+  };
+}
+
+export async function fetchMatchLineups(eventId) {
+  if (!eventId) return { home: null, away: null };
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/all/summary?event=${eventId}`;
+  const res = await fetch(url);
+  if (!res.ok) return { home: null, away: null };
+  const data = await res.json();
+
+  const comp = data.header?.competitions?.[0] || data.competitions?.[0] || {};
+  const competitors = comp.competitors || [];
+  const homeComp = competitors.find((c) => c.homeAway === 'home') || competitors[0];
+  const awayComp = competitors.find((c) => c.homeAway === 'away') || competitors[1];
+
+  const rosters = data.rosters || [];
+
+  const parseSide = (competitor) => {
+    if (!competitor) return null;
+    const teamId = String(competitor.id || competitor.team?.id);
+    const teamRoster = rosters.find((r) => String(r.team?.id) === teamId);
+    if (!teamRoster || !Array.isArray(teamRoster.roster)) return null;
+
+    const starters = [];
+    teamRoster.roster.forEach((p) => {
+      const slot = Number(p.formationPlace);
+      if (p.starter || (!isNaN(slot) && slot >= 1 && slot <= 11)) {
+        starters.push({
+          id: String(p.athlete?.id || p.id),
+          name: p.athlete?.displayName || p.athlete?.fullName || p.athlete?.name || '',
+          jersey: String(p.jersey || ''),
+          slot: isNaN(slot) ? starters.length + 1 : slot,
+        });
+      }
+    });
+
+    if (starters.length < 11) return null;
+    starters.sort((a, b) => a.slot - b.slot);
+
+    return {
+      teamId,
+      teamName: competitor.team?.displayName || competitor.team?.name || '',
+      formation: teamRoster.formation || '4-3-3',
+      starters,
+    };
+  };
+
+  return {
+    home: parseSide(homeComp),
+    away: parseSide(awayComp),
   };
 }

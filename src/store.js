@@ -16,6 +16,7 @@ export const useAppStore = create(
       activeTab: 'matches',
       statusFilter: 'all',
       showLiveModal: false,
+      tacticsSeed: null,
 
       // --- Favorites State (Saved to LocalStorage) ---
       favorites: [], 
@@ -33,6 +34,7 @@ export const useAppStore = create(
       setActiveTab: (tab) => set({ activeTab: tab }),
       setStatusFilter: (filter) => set({ statusFilter: filter }),
       setShowLiveModal: (show) => set({ showLiveModal: show }),
+      setTacticsSeed: (seed) => set({ tacticsSeed: seed }),
 
       // Toggle favorite action (adds if missing, removes if exists)
       toggleFavorite: (matchId) => set((state) => {
@@ -50,3 +52,5 @@ export const useAppStore = create(
     }
   )
 );
+
+export default useAppStore;

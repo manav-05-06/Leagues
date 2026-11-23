@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Radio, Calendar, Table2, Star, PlayCircle } from 'lucide-react';
+import { Search, Radio, Calendar, Table2, Star, PlayCircle, ClipboardList } from 'lucide-react';
 import { useAppStore } from '../store';
 import { useShallow } from 'zustand/react/shallow';
 import { ALL_LEAGUES, LEAGUE_CATEGORIES } from '../constants/leagues';
@@ -145,6 +145,13 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
             title="Tactical 2D Player Tracking Replay Demo"
           >
             <PlayCircle size={18} color="#00ff87" /> Replay demo
+          </button>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'tactics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tactics')}
+            title="Both Teams on One Pitch Tactics Board"
+          >
+            <ClipboardList size={18} color="#00f2fe" /> Tactics board
           </button>
         </div>
 

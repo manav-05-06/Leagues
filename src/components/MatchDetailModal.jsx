@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Activity, Users, History, Trophy, Timer, PlayCircle, Radio, BarChart2 } from 'lucide-react';
+import { Activity, Users, History, Trophy, Timer, PlayCircle, Radio, BarChart2, ClipboardList } from 'lucide-react';
 import { useMatchSummary } from '../hooks/useMatches';
+import { useAppStore } from '../store';
 import TeamLogo from './TeamLogo';
 import Modal from './Modal';
 import AnalyticsTab from './analytics/AnalyticsTab';
@@ -9,6 +10,9 @@ import './MatchDetailModal.css';
 
 export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const setActiveTabGlobal = useAppStore((s) => s.setActiveTab);
+  const setTacticsSeed = useAppStore((s) => s.setTacticsSeed);
+
   const { data: summary, isLoading: loading, error: queryError } = useMatchSummary(match?.id);
   const error = queryError ? 'Failed to load deep match statistics.' : null;
 
@@ -16,6 +20,29 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
 
   const isLive = match.status === 'live';
   const isFinished = match.status === 'finished';
+
+  const handleOpenTacticsBoard = () => {
+    setTacticsSeed({
+      league: match.leagueSlug || match.league?.slug || 'eng.1',
+      eventId: match.id,
+      home: {
+        id: match.homeTeam?.id,
+        name: match.homeTeam?.name,
+        color: match.homeTeam?.color,
+        altColor: match.homeTeam?.altColor,
+        logo: match.homeTeam?.logoUrl || match.homeTeam?.logo,
+      },
+      away: {
+        id: match.awayTeam?.id,
+        name: match.awayTeam?.name,
+        color: match.awayTeam?.color,
+        altColor: match.awayTeam?.altColor,
+        logo: match.awayTeam?.logoUrl || match.awayTeam?.logo,
+      },
+    });
+    setActiveTabGlobal('tactics');
+    onClose();
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -293,8 +320,8 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
           </div>
         </div>
 
-        {/* Overview vs Analytics Tab Switcher */}
-        <div className="modal-tab-switch-wrap">
+        {/* Overview vs Analytics Tab Switcher & Tactics Board Button */}
+        <div className="modal-tab-switch-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div className="modal-tab-switch-pill">
             <button
               type="button"
@@ -313,6 +340,28 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
               <span className="modal-tab-tag">xG</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            className="modal-tab-btn"
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(15, 23, 42, 0.7)',
+              color: 'var(--accent-secondary, #00f2fe)',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+            }}
+            onClick={handleOpenTacticsBoard}
+            title="Open both lineups on interactive tactics board"
+          >
+            <ClipboardList size={14} />
+            <span>Tactics board</span>
+          </button>
         </div>
 
         {activeTab === 'analytics' ? (
