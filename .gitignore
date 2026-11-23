@@ -34,5 +34,4 @@ __pycache__
 # Local environment and Vercel link
 .env
 .env.*
-!.env.example
 .vercel
