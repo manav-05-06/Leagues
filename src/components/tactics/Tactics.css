@@ -1,0 +1,539 @@
+/* ==========================================================================
+   TACTICS BOARD STYLES (Plain CSS, Dark Green/Slate Theme)
+   ========================================================================== */
+
+.tactics-board-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 12px 16px 40px;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  color: var(--text-main, #f8fafc);
+  min-height: calc(100vh - 120px);
+}
+
+/* Toolbar */
+.tactics-toolbar {
+  background: var(--pitch-card, #0a1c13);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tactics-toolbar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tactics-matchup-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tactics-team-trigger-btn {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-height: 44px;
+  color: var(--text-main, #f8fafc);
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tactics-team-trigger-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tactics-team-trigger-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.tactics-vs-badge {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+}
+
+.tactics-formation-select {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  color: var(--accent-primary, #00ff87);
+  padding: 6px 8px;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tactics-formation-select:focus {
+  outline: 2px solid var(--accent-primary, #00ff87);
+}
+
+.tactics-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tactics-btn {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.tactics-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.tactics-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tactics-btn-primary {
+  background: var(--accent-primary, #00ff87);
+  color: #08170f;
+  font-weight: 700;
+  border: none;
+}
+
+.tactics-btn-primary:hover:not(:disabled) {
+  background: #00e077;
+  color: #08170f;
+}
+
+/* Notice banner */
+.tactics-notice-banner {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tactics-notice-close {
+  background: transparent;
+  border: none;
+  color: #fde68a;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+
+/* Main Board Grid */
+.tactics-board-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .tactics-board-grid {
+    grid-template-columns: 280px 1fr 280px;
+  }
+}
+
+/* Pitch Stage */
+.tactics-pitch-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  aspect-ratio: 68 / 105;
+  background: #08170f;
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  touch-action: none; /* Prevents mobile scroll while dragging */
+  user-select: none;
+}
+
+.tactics-pitch-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Player Tokens */
+.player-token-group {
+  cursor: grab;
+  outline: none;
+}
+
+.player-token-group:active,
+.player-token-group.dragging {
+  cursor: grabbing;
+}
+
+.player-token-label {
+  font-size: 2.2px;
+  font-weight: 700;
+  fill: #ffffff;
+  text-anchor: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: #08170f;
+  stroke-width: 0.4px;
+}
+
+/* Squad Panel */
+.desktop-squad-col {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .desktop-squad-col {
+    display: block;
+  }
+  .mobile-squad-drawer {
+    display: none;
+  }
+}
+
+.tactics-squad-panel {
+  background: var(--pitch-card, #0a1c13);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tactics-squad-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+}
+
+.tactics-squad-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-main, #f8fafc);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tactics-squad-source-label {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 2px;
+}
+
+.tactics-pos-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tactics-pos-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  letter-spacing: 0.5px;
+}
+
+.tactics-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.squad-player-chip {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
+  color: var(--text-main, #f8fafc);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.squad-player-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.squad-player-chip.on-pitch {
+  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.squad-player-chip.selected {
+  border-color: var(--accent-primary, #00ff87);
+  background: rgba(0, 255, 135, 0.15);
+  outline: 2px solid var(--accent-primary, #00ff87);
+}
+
+.squad-chip-jersey {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  font-size: 11px;
+}
+
+/* Mobile Squad Drawer Tabs */
+.mobile-squad-drawer {
+  background: var(--pitch-card, #0a1c13);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.mobile-squad-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mobile-squad-tab-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.1));
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-muted, #94a3b8);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobile-squad-tab-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main, #f8fafc);
+  border-color: var(--accent-primary, #00ff87);
+}
+
+/* Modals & Sheets */
+.tactics-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 10, 6, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.tactics-modal-content {
+  background: #0f172a;
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.15));
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  gap: 14px;
+}
+
+.tactics-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tactics-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tactics-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 400px;
+  padding-right: 4px;
+}
+
+.tactics-team-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-align: center;
+  min-height: 90px;
+  transition: all 0.15s ease;
+}
+
+.tactics-team-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tactics-team-card img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.tactics-team-card span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+  line-height: 1.2;
+}
+
+.tactics-search-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ffffff;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.tactics-formation-select optgroup {
+  background: #0f172a;
+  color: var(--accent-primary, #00ff87);
+  font-weight: 700;
+}
+
+.tactics-formation-select option {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 6px 8px;
+}
+
+.tactics-quick-leagues {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.tactics-league-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tactics-league-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.tactics-league-pill.active {
+  background: rgba(0, 255, 135, 0.15);
+  border-color: var(--accent-primary, #00ff87);
+  color: var(--accent-primary, #00ff87);
+  font-weight: 700;
+}
+
+.tactics-team-card.active-team {
+  border-color: var(--accent-primary, #00ff87);
+  background: rgba(0, 255, 135, 0.1);
+  box-shadow: 0 0 10px rgba(0, 255, 135, 0.2);
+}
+
+.tactics-search-input:focus {
+  outline: 2px solid var(--accent-primary, #00ff87);
+}
+
+/* Saved boards list */
+.saved-boards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.saved-board-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+}
+
+.saved-board-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saved-board-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.saved-board-date {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+}

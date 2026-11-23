@@ -22,3 +22,17 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python & analytics-api
+analytics-api/.venv
+analytics-api/data/raw/
+analytics-api/.pytest_cache
+analytics-api/.ruff_cache
+__pycache__
+*.pyc
+
+# Local environment and Vercel link
+.env
+.env.*
+!.env.example
+.vercel

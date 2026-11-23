@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trophy, Radio, Activity, Crown, Shield, Award } from 'lucide-react';
 import { useAppStore } from '../store';
 import { useStandings } from '../hooks/useMatches';
 import { ALL_LEAGUES } from '../constants/leagues';
+import { paths } from '../routes.js';
 
-export default function LeagueTable({ matches = [], onTeamSelect }) {
+export default function LeagueTable({ matches = [] }) {
+  const navigate = useNavigate();
   const selectedLeague = useAppStore((state) => state.selectedLeague);
   const selectedSeason = useAppStore((state) => state.selectedSeason);
-  const setSelectedLeague = useAppStore((state) => state.setSelectedLeague);
   
   // Active league for standings (if 'all' is selected, default to 'eng.1' for standings view)
   const currentLeagueSlug = selectedLeague === 'all' ? 'eng.1' : selectedLeague;
@@ -53,7 +55,7 @@ export default function LeagueTable({ matches = [], onTeamSelect }) {
           <div>
             <h2>{standingsData?.leagueName || activeLeagueInfo.name}</h2>
             <p className="standings-subtitle">
-              OFFICIAL TABLE & RANKINGS &bull; SEASON {selectedSeason}-{parseInt(selectedSeason) + 1}
+              OFFICIAL TABLE & RANKINGS &bull; SEASON {selectedSeason}-{parseInt(selectedSeason, 10) + 1}
             </p>
           </div>
         </div>
@@ -62,7 +64,9 @@ export default function LeagueTable({ matches = [], onTeamSelect }) {
         <div className="standings-controls-group">
           <select 
             value={currentLeagueSlug} 
-            onChange={(e) => setSelectedLeague(e.target.value)}
+            onChange={(e) => {
+              navigate(paths.table(e.target.value));
+            }}
             className="season-select-styled"
             style={{ minWidth: '180px' }}
           >
@@ -105,7 +109,11 @@ export default function LeagueTable({ matches = [], onTeamSelect }) {
               {leaderEntry && (
                 <div className="champion-spotlight-banner">
                   <div className="champion-glow-bg"></div>
-                  <div className="champion-left">
+                  <Link 
+                    to={paths.team({ id: leaderEntry.team.id, name: leaderEntry.team.name })}
+                    className="champion-left"
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
                     <div className="crown-badge">
                       <Crown size={24} color="#ffd700" />
                       <span>#1 RANKED</span>
@@ -124,7 +132,7 @@ export default function LeagueTable({ matches = [], onTeamSelect }) {
                         Record: <strong>{leaderEntry.stats.wins}W</strong> - {leaderEntry.stats.draws}D - {leaderEntry.stats.losses}L
                       </p>
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="champion-stats-grid">
                     <div className="champ-stat-box">
@@ -186,19 +194,20 @@ export default function LeagueTable({ matches = [], onTeamSelect }) {
                                   {entry.rank}
                                 </span>
                               </td>
-                              <td 
-                                className={`team-cell ${onTeamSelect ? 'clickable-table-team' : ''}`}
-                                onClick={() => onTeamSelect && onTeamSelect(entry.team.name)}
-                                title={onTeamSelect ? `View ${entry.team.name} Team Hub` : undefined}
-                              >
-                                <div className="team-cell-wrapper">
+                              <td className="team-cell">
+                                <Link 
+                                  to={paths.team({ id: entry.team.id, name: entry.team.name })}
+                                  className="team-cell-wrapper"
+                                  style={{ textDecoration: 'none', color: 'inherit' }}
+                                  title={`View ${entry.team.name} Team Page`}
+                                >
                                   {entry.team.logo ? (
                                     <img src={entry.team.logo} alt={entry.team.name} className="table-team-logo" />
                                   ) : (
                                     <div className="table-team-placeholder">⚽</div>
                                   )}
                                   <span className="table-team-name">{entry.team.name}</span>
-                                </div>
+                                </Link>
                               </td>
                               <td style={{ textAlign: 'center', fontWeight: 600 }}>{entry.stats.played}</td>
                               <td style={{ textAlign: 'center', color: '#00ff87' }}>{entry.stats.wins}</td>
@@ -285,4 +294,3 @@ export default function LeagueTable({ matches = [], onTeamSelect }) {
     </div>
   );
 }
-

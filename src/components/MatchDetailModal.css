@@ -711,3 +711,61 @@
   color: var(--text-main);
 }
 
+/* Modal Overview / Analytics Tab Switcher */
+.modal-tab-switch-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0.75rem 0;
+}
+
+.modal-tab-switch-pill {
+  display: flex;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.08));
+  width: 100%;
+  max-width: 320px;
+}
+
+.modal-tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--text-muted, #94a3b8);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.modal-tab-btn.active {
+  background-color: var(--accent-primary, #00ff87);
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.modal-tab-tag {
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 700;
+  background-color: rgba(0, 255, 135, 0.15);
+  color: #00ff87;
+}
+
+.modal-tab-btn.active .modal-tab-tag {
+  background-color: rgba(15, 23, 42, 0.25);
+  color: #0f172a;
+}
+
+.analytics-tab-wrapper {
+  padding: 0.5rem 1rem 2rem;
+}
+

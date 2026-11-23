@@ -1,18 +1,123 @@
-import { Activity, Users, History, Trophy, Timer, PlayCircle, Radio } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Activity, Users, History, Trophy, Timer, PlayCircle, Radio, BarChart2, ClipboardList, Download } from 'lucide-react';
 import { useMatchSummary } from '../hooks/useMatches';
+import { useAppStore } from '../store';
 import TeamLogo from './TeamLogo';
 import Modal from './Modal';
+import AnalyticsTab from './analytics/AnalyticsTab';
 import { formatKickoff } from '../api';
+import { matchFromSummary } from '../seo/normalize.js';
+import { useDocumentHead } from '../hooks/useDocumentHead.js';
+import { paths, slugify } from '../routes.js';
 import './MatchDetailModal.css';
 
 export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
-  const { data: summary, isLoading: loading, error: queryError } = useMatchSummary(match?.id);
+  const [activeTab, setActiveTab] = useState('overview');
+  const setActiveTabGlobal = useAppStore((s) => s.setActiveTab);
+  const setTacticsSeed = useAppStore((s) => s.setTacticsSeed);
+
+  const { slug } = useParams();
+  const navigate = useNavigate();
+
+  const matchId = match?.id;
+  const { data: summary, isLoading: loading, error: queryError } = useMatchSummary(matchId);
   const error = queryError ? 'Failed to load deep match statistics.' : null;
 
-  if (!match) return null;
+  const normalized = useMemo(() => matchFromSummary(summary), [summary]);
+  useDocumentHead(normalized);
 
-  const isLive = match.status === 'live';
-  const isFinished = match.status === 'finished';
+  // Canonical slug redirect if slug is missing or wrong
+  useEffect(() => {
+    if (normalized?.home?.name && normalized?.away?.name && matchId) {
+      const canonicalSlug = slugify(`${normalized.home.name} vs ${normalized.away.name}`);
+      if (canonicalSlug && slug && slug !== canonicalSlug) {
+        navigate(paths.match({ id: matchId, home: normalized.home, away: normalized.away }), { replace: true });
+      }
+    }
+  }, [normalized, matchId, slug, navigate]);
+
+  // Merge match with summary details if match was only { id }
+  const effectiveMatch = useMemo(() => {
+    if (match?.homeTeam?.name) return match;
+    if (!normalized) return match || { id: matchId };
+    return {
+      ...match,
+      id: normalized.id,
+      league: normalized.league.name,
+      leagueSlug: normalized.league.espnSlug,
+      status: normalized.status,
+      statusDetail: normalized.minute || (normalized.status === 'finished' ? 'FT' : ''),
+      time: normalized.minute,
+      kickoff: normalized.kickoff,
+      score: {
+        home: normalized.home.score,
+        away: normalized.away.score,
+      },
+      homeTeam: {
+        id: normalized.home.id,
+        name: normalized.home.name,
+        logoUrl: normalized.home.logo,
+        color: normalized.home.color,
+      },
+      awayTeam: {
+        id: normalized.away.id,
+        name: normalized.away.name,
+        logoUrl: normalized.away.logo,
+        color: normalized.away.color,
+      },
+      homeTeamId: normalized.home.id,
+      awayTeamId: normalized.away.id,
+      details: summary?.keyEvents || [],
+    };
+  }, [match, normalized, summary, matchId]);
+
+  if (!effectiveMatch?.id && !matchId) return null;
+
+  const m = effectiveMatch;
+  const isLive = m.status === 'live';
+  const isFinished = m.status === 'finished';
+
+  const homeId = m.homeTeam?.id || m.homeTeamId || normalized?.home?.id;
+  const homeName = m.homeTeam?.name || normalized?.home?.name || 'Home';
+  const homeLogo = m.homeTeam?.logoUrl || m.homeTeam?.logo || normalized?.home?.logo;
+
+  const awayId = m.awayTeam?.id || m.awayTeamId || normalized?.away?.id;
+  const awayName = m.awayTeam?.name || normalized?.away?.name || 'Away';
+  const awayLogo = m.awayTeam?.logoUrl || m.awayTeam?.logo || normalized?.away?.logo;
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
+  const handleOpenTacticsBoard = () => {
+    setTacticsSeed({
+      league: m.leagueSlug || m.league?.slug || 'eng.1',
+      eventId: m.id,
+      home: {
+        id: homeId,
+        name: homeName,
+        color: m.homeTeam?.color || normalized?.home?.color,
+        altColor: m.homeTeam?.altColor,
+        logo: homeLogo,
+      },
+      away: {
+        id: awayId,
+        name: awayName,
+        color: m.awayTeam?.color || normalized?.away?.color,
+        altColor: m.awayTeam?.altColor,
+        logo: awayLogo,
+      },
+    });
+    setActiveTabGlobal('tactics');
+    handleClose();
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -102,11 +207,11 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
                   className="motm-name clickable-player" 
                   role="button"
                   tabIndex={0}
-                  onClick={() => onPlayerClick && onPlayerClick(motm.id, motm.teamId, match.leagueSlug)}
+                  onClick={() => onPlayerClick && onPlayerClick(motm.id, motm.teamId, m.leagueSlug)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      onPlayerClick && onPlayerClick(motm.id, motm.teamId, match.leagueSlug);
+                      onPlayerClick && onPlayerClick(motm.id, motm.teamId, m.leagueSlug);
                     }
                   }}
                   title="View Scout Profile"
@@ -213,11 +318,11 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
                             className="leader-name-pill clickable-player"
                             role="button"
                             tabIndex={0}
-                            onClick={() => l.athlete?.id && onPlayerClick && onPlayerClick(l.athlete.id, teamLeaders.team.id, match.leagueSlug)}
+                            onClick={() => l.athlete?.id && onPlayerClick && onPlayerClick(l.athlete.id, teamLeaders.team.id, m.leagueSlug)}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                l.athlete?.id && onPlayerClick && onPlayerClick(l.athlete.id, teamLeaders.team.id, match.leagueSlug);
+                                l.athlete?.id && onPlayerClick && onPlayerClick(l.athlete.id, teamLeaders.team.id, m.leagueSlug);
                               }
                             }}
                           >
@@ -238,175 +343,268 @@ export default function MatchDetailModal({ match, onClose, onPlayerClick }) {
 
   return (
     <Modal
-      isOpen={Boolean(match)}
-      onClose={onClose}
+      isOpen={Boolean(matchId)}
+      onClose={handleClose}
       className="stadium-modal"
-      title={`${match.homeTeam?.name || 'Home'} vs ${match.awayTeam?.name || 'Away'}`}
+      title={`${homeName} vs ${awayName}`}
     >
+      {/* Semantic H1 for SEO and screen readers */}
+      <h1 className="sr-only" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+        {homeName} {m.status !== 'upcoming' && m.status !== 'postponed' ? `${m.score?.home ?? '0'}-${m.score?.away ?? '0'}` : 'vs'} {awayName}
+      </h1>
+
       {/* Stadium Broadcast Scoreboard Header */}
-        <div className="stadium-match-header">
-          <div className="tactical-pitch-lines"></div>
+      <div className="stadium-match-header">
+        <div className="tactical-pitch-lines"></div>
 
-          <div className="modal-team home">
-            <div className="modal-logo-wrapper">
-              <TeamLogo logo={match.homeTeam?.logoUrl || match.homeTeam?.logo} name={match.homeTeam?.name} />
-            </div>
-            <h2>{match.homeTeam?.name}</h2>
+        <Link 
+          to={homeId ? paths.team({ id: homeId, name: homeName }) : '#'} 
+          className="modal-team home"
+          style={{ textDecoration: 'none', color: 'inherit' }}
+          onClick={() => { if (homeId) handleClose(); }}
+          title={`View ${homeName} Team Page`}
+        >
+          <div className="modal-logo-wrapper">
+            <TeamLogo logo={homeLogo} name={homeName} />
           </div>
-          
-          <div className="modal-score">
-            <div className={`modal-status-pill status-${match.status}`}>
-              {isLive ? (
-                <>
-                  <Radio size={12} className="pulse-dot" /> LIVE {match.statusDetail || match.time ? `• ${match.statusDetail || match.time}` : ''}
-                </>
-              ) : isFinished ? (
-                match.statusDetail && match.statusDetail !== 'FT' ? match.statusDetail : 'FULL TIME'
-              ) : match.status === 'postponed' ? (
-                match.statusDetail || 'POSTPONED'
-              ) : (
-                <><Timer size={12} /> {match.kickoff ? formatKickoff(match.kickoff) : (match.time || 'UPCOMING')}</>
-              )}
-            </div>
-            <div className="score-numbers-broadcast">
-              {match.status !== 'upcoming' && match.status !== 'postponed' ? (
-                <>
-                  <span className="score-digit">{match.score?.home ?? '0'}</span>
-                  <span className="score-separator">:</span>
-                  <span className="score-digit">{match.score?.away ?? '0'}</span>
-                </>
-              ) : (
-                <span className="vs-large">VS</span>
-              )}
-            </div>
-            <span className="match-league-sub">{match.league}</span>
-          </div>
-
-          <div className="modal-team away">
-            <div className="modal-logo-wrapper">
-              <TeamLogo logo={match.awayTeam?.logoUrl || match.awayTeam?.logo} name={match.awayTeam?.name} />
-            </div>
-            <h2>{match.awayTeam?.name}</h2>
-          </div>
-        </div>
+          <h2>{homeName}</h2>
+        </Link>
         
-        {/* Match Event Timeline */}
-        {match.details && match.details.length > 0 && (
-          <div className="match-timeline-container">
-            <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
-              <Timer size={18} color="var(--accent-primary)" /> <span>Match Timeline</span>
-            </h3>
-            <div className="timeline-vertical">
-              {match.details
-                .filter(d => d.scoringPlay || d.redCard || d.yellowCard)
-                .map((event, i) => {
-                const isHome = event.team?.id === match.homeTeamId;
-                const athlete = event.athletesInvolved?.[0];
-                const time = event.clock?.displayValue || "?'";
-                
-                let icon = '';
-                let className = '';
-                if (event.scoringPlay) { icon = '⚽'; className = 'timeline-goal'; }
-                else if (event.redCard) { icon = ''; className = 'timeline-red'; }
-                else if (event.yellowCard) { icon = ''; className = 'timeline-yellow'; }
-                
-                if (!className) return null;
-
-                return (
-                  <div key={i} className={`timeline-row ${isHome ? 'home-event' : 'away-event'}`}>
-                    {isHome ? (
-                      <>
-                        <div className="timeline-content left">
-                          {event.ownGoal && <span className="goal-meta">(OG)</span>}
-                          {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
-                          <span 
-                            className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
-                            role={athlete?.id ? "button" : undefined}
-                            tabIndex={athlete?.id ? 0 : undefined}
-                            onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
-                            onKeyDown={(e) => {
-                              if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
-                                e.preventDefault();
-                                onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
-                              }
-                            }}
-                          >
-                            {athlete?.shortName || athlete?.displayName || 'Unknown'}
-                          </span>
-                        </div>
-                        <div className={`timeline-icon ${className}`}>{icon}</div>
-                        <div className="timeline-time">{time}</div>
-                        <div className="timeline-content right"></div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="timeline-content left"></div>
-                        <div className="timeline-time">{time}</div>
-                        <div className={`timeline-icon ${className}`}>{icon}</div>
-                        <div className="timeline-content right">
-                          <span 
-                            className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
-                            role={athlete?.id ? "button" : undefined}
-                            tabIndex={athlete?.id ? 0 : undefined}
-                            onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, match.leagueSlug)}
-                            onKeyDown={(e) => {
-                              if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
-                                e.preventDefault();
-                                onPlayerClick(athlete.id, event.team?.id, match.leagueSlug);
-                              }
-                            }}
-                          >
-                            {athlete?.shortName || athlete?.displayName || 'Unknown'}
-                          </span>
-                          {event.ownGoal && <span className="goal-meta">(OG)</span>}
-                          {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        <div className="modal-score">
+          <div className={`modal-status-pill status-${m.status}`}>
+            {isLive ? (
+              <>
+                <Radio size={12} className="pulse-dot" /> LIVE {m.statusDetail || m.time ? `• ${m.statusDetail || m.time}` : ''}
+              </>
+            ) : isFinished ? (
+              m.statusDetail && m.statusDetail !== 'FT' ? m.statusDetail : 'FULL TIME'
+            ) : m.status === 'postponed' ? (
+              m.statusDetail || 'POSTPONED'
+            ) : (
+              <><Timer size={12} /> {m.kickoff ? formatKickoff(m.kickoff) : (m.time || 'UPCOMING')}</>
+            )}
           </div>
-        )}
-
-        {/* Match Highlights (Only for Finished Matches) */}
-        {isFinished && (
-          <div className="match-highlights-container" style={{ margin: '2rem 0' }}>
-            <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
-              <PlayCircle size={18} color="#FF0000" /> <span>Official Match Highlights</span>
-            </h3>
-            <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-              Watch the official highlights on YouTube.
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <a 
-                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${match.league} ${match.homeTeam.name} vs ${match.awayTeam.name} official highlights`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: '#FF0000',
-                  color: 'white',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '24px',
-                  textDecoration: 'none',
-                  fontWeight: 'bold',
-                  fontSize: '0.95rem',
-                  transition: 'background-color 0.2s',
-                  boxShadow: '0 4px 6px rgba(255, 0, 0, 0.2)'
-                }}
-              >
-                <PlayCircle size={20} /> Watch on YouTube
-              </a>
-            </div>
+          <div className="score-numbers-broadcast">
+            {m.status !== 'upcoming' && m.status !== 'postponed' ? (
+              <>
+                <span className="score-digit">{m.score?.home ?? '0'}</span>
+                <span className="score-separator">:</span>
+                <span className="score-digit">{m.score?.away ?? '0'}</span>
+              </>
+            ) : (
+              <span className="vs-large">VS</span>
+            )}
           </div>
-        )}
+          <span className="match-league-sub">{m.league}</span>
+        </div>
 
-        {renderContent()}
+        <Link 
+          to={awayId ? paths.team({ id: awayId, name: awayName }) : '#'} 
+          className="modal-team away"
+          style={{ textDecoration: 'none', color: 'inherit' }}
+          onClick={() => { if (awayId) handleClose(); }}
+          title={`View ${awayName} Team Page`}
+        >
+          <div className="modal-logo-wrapper">
+            <TeamLogo logo={awayLogo} name={awayName} />
+          </div>
+          <h2>{awayName}</h2>
+        </Link>
+      </div>
+
+      {/* Overview vs Analytics Tab Switcher & Tactics Board Button */}
+      <div className="modal-tab-switch-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="modal-tab-switch-pill">
+          <button
+            type="button"
+            className={`modal-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            className={`modal-tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChart2 size={14} />
+            <span>Analytics</span>
+            <span className="modal-tab-tag">xG</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="modal-tab-btn"
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'rgba(15, 23, 42, 0.7)',
+            color: 'var(--accent-secondary, #00f2fe)',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+          }}
+          onClick={handleOpenTacticsBoard}
+          title="Open both lineups on interactive tactics board"
+        >
+          <ClipboardList size={14} />
+          <span>Tactics board</span>
+        </button>
+
+        <a
+          href={`/og/match/${m.id}.png`}
+          download={`matchday-${m.id}.png`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="modal-tab-btn"
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'rgba(15, 23, 42, 0.7)',
+            color: 'var(--accent-primary, #00ff87)',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            textDecoration: 'none',
+          }}
+          title="Download 1200x675 social preview card"
+        >
+          <Download size={14} />
+          <span>Download card</span>
+        </a>
+      </div>
+
+      {activeTab === 'analytics' ? (
+        <div className="analytics-tab-wrapper">
+          <AnalyticsTab match={m} onPlayerClick={onPlayerClick} />
+        </div>
+      ) : (
+        <>
+          {/* Match Event Timeline */}
+          {m.details && m.details.length > 0 && (
+            <div className="match-timeline-container">
+              <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
+                <Timer size={18} color="var(--accent-primary)" /> <span>Match Timeline</span>
+              </h3>
+              <div className="timeline-vertical">
+                {m.details
+                  .filter(d => d.scoringPlay || d.redCard || d.yellowCard)
+                  .map((event, i) => {
+                  const isHome = event.team?.id === m.homeTeamId;
+                  const athlete = event.athletesInvolved?.[0];
+                  const time = event.clock?.displayValue || "?'";
+                  
+                  let icon = '';
+                  let className = '';
+                  if (event.scoringPlay) { icon = '⚽'; className = 'timeline-goal'; }
+                  else if (event.redCard) { icon = ''; className = 'timeline-red'; }
+                  else if (event.yellowCard) { icon = ''; className = 'timeline-yellow'; }
+                  
+                  if (!className) return null;
+
+                  return (
+                    <div key={i} className={`timeline-row ${isHome ? 'home-event' : 'away-event'}`}>
+                      {isHome ? (
+                        <>
+                          <div className="timeline-content left">
+                            {event.ownGoal && <span className="goal-meta">(OG)</span>}
+                            {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
+                            <span 
+                              className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                              role={athlete?.id ? "button" : undefined}
+                              tabIndex={athlete?.id ? 0 : undefined}
+                              onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, m.leagueSlug)}
+                              onKeyDown={(e) => {
+                                if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
+                                  e.preventDefault();
+                                  onPlayerClick(athlete.id, event.team?.id, m.leagueSlug);
+                                }
+                              }}
+                            >
+                              {athlete?.shortName || athlete?.displayName || 'Unknown'}
+                            </span>
+                          </div>
+                          <div className={`timeline-icon ${className}`}>{icon}</div>
+                          <div className="timeline-time">{time}</div>
+                          <div className="timeline-content right"></div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="timeline-content left"></div>
+                          <div className="timeline-time">{time}</div>
+                          <div className={`timeline-icon ${className}`}>{icon}</div>
+                          <div className="timeline-content right">
+                            <span 
+                              className={athlete?.id ? "clickable-player timeline-player" : "timeline-player"}
+                              role={athlete?.id ? "button" : undefined}
+                              tabIndex={athlete?.id ? 0 : undefined}
+                              onClick={() => athlete?.id && onPlayerClick && onPlayerClick(athlete.id, event.team?.id, m.leagueSlug)}
+                              onKeyDown={(e) => {
+                                if ((e.key === 'Enter' || e.key === ' ') && athlete?.id && onPlayerClick) {
+                                  e.preventDefault();
+                                  onPlayerClick(athlete.id, event.team?.id, m.leagueSlug);
+                                }
+                              }}
+                            >
+                              {athlete?.shortName || athlete?.displayName || 'Unknown'}
+                            </span>
+                            {event.ownGoal && <span className="goal-meta">(OG)</span>}
+                            {event.penaltyKick && <span className="goal-meta">(PEN)</span>}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Match Highlights (Only for Finished Matches) */}
+          {isFinished && (
+            <div className="match-highlights-container" style={{ margin: '2rem 0' }}>
+              <h3 className="section-title" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
+                <PlayCircle size={18} color="#FF0000" /> <span>Official Match Highlights</span>
+              </h3>
+              <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                Watch the official highlights on YouTube.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <a 
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${m.league} ${homeName} vs ${awayName} official highlights`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: '#FF0000',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '24px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '0.95rem',
+                    transition: 'background-color 0.2s',
+                    boxShadow: '0 4px 6px rgba(255, 0, 0, 0.2)'
+                  }}
+                >
+                  <PlayCircle size={20} /> Watch on YouTube
+                </a>
+              </div>
+            </div>
+          )}
+
+          {renderContent()}
+        </>
+      )}
     </Modal>
   );
 }
-

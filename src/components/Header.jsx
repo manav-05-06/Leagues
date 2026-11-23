@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { Search, Radio, Calendar, Table2, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Radio, Calendar, Table2, Star, PlayCircle, ClipboardList } from 'lucide-react';
 import { useAppStore } from '../store';
 import { useShallow } from 'zustand/react/shallow';
 import { ALL_LEAGUES, LEAGUE_CATEGORIES } from '../constants/leagues';
+import { paths } from '../routes.js';
 
 export default function Header({ liveCount = 0, totalCount = 0 }) {
   // Pull what we need directly from our Zustand store
   const { 
-    selectedLeague, setSelectedLeague, 
+    selectedLeague, 
     selectedSeason, setSelectedSeason, 
     activeTab, setActiveTab, 
     setShowLiveModal 
   } = useAppStore(
     useShallow((state) => ({
       selectedLeague: state.selectedLeague,
-      setSelectedLeague: state.setSelectedLeague,
       selectedSeason: state.selectedSeason,
       setSelectedSeason: state.setSelectedSeason,
       activeTab: state.activeTab,
@@ -66,7 +67,7 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
 
       {/* Main Brand Section & League Switchers */}
       <div className="header-top-row">
-        <div className="brand-section">
+        <Link to={paths.home()} className="brand-section" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="brand-logo-crest">
             ⚽
           </div>
@@ -74,7 +75,7 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
             <h1>Matchday Arena</h1>
             <div className="brand-tagline">Worldwide Football & Competition Center</div>
           </div>
-        </div>
+        </Link>
 
         {/* Category Filter Pills */}
         <div className="category-filter-bar">
@@ -96,37 +97,43 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
 
       {/* League Selector Badge Cards */}
       <div className="league-selector-bar">
-        {visibleLeagues.map(league => (
-          <button
-            key={league.id}
-            className={`league-btn-badge ${selectedLeague === league.id ? 'active' : ''}`}
-            onClick={() => setSelectedLeague(league.id)}
-          >
-            {league.logo ? (
-              <img src={league.logo} alt={league.name} />
-            ) : (
-              <span className="league-icon">{league.icon}</span>
-            )}
-            <span>{league.name}</span>
-          </button>
-        ))}
+        {visibleLeagues.map(league => {
+          const to = league.id === 'all' ? paths.home() : paths.league(league.id);
+          return (
+            <Link
+              key={league.id}
+              to={to}
+              className={`league-btn-badge ${selectedLeague === league.id ? 'active' : ''}`}
+              style={{ textDecoration: 'none' }}
+            >
+              {league.logo ? (
+                <img src={league.logo} alt={league.name} />
+              ) : (
+                <span className="league-icon">{league.icon}</span>
+              )}
+              <span>{league.name}</span>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Navigation Tabs & Header Controls */}
       <div className="header-controls">
         <div className="nav-tabs">
-          <button 
+          <Link 
+            to={selectedLeague === 'all' ? paths.home() : paths.league(selectedLeague)}
             className={`nav-tab-btn ${activeTab === 'matches' ? 'active' : ''}`}
-            onClick={() => setActiveTab('matches')}
+            style={{ textDecoration: 'none' }}
           >
             <Calendar size={18} /> Fixtures & Results
-          </button>
-          <button 
+          </Link>
+          <Link 
+            to={paths.table(selectedLeague === 'all' ? 'eng.1' : selectedLeague)}
             className={`nav-tab-btn ${activeTab === 'standings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('standings')}
+            style={{ textDecoration: 'none' }}
           >
             <Table2 size={18} /> Standings
-          </button>
+          </Link>
           <button 
             className={`nav-tab-btn ${activeTab === 'search' ? 'active' : ''}`}
             onClick={() => setActiveTab('search')}
@@ -139,6 +146,22 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
           >
             <Star size={18} /> My Favorites
           </button>
+          <Link 
+            to={paths.replay()}
+            className={`nav-tab-btn ${activeTab === 'replay' ? 'active' : ''}`}
+            style={{ textDecoration: 'none' }}
+            title="Tactical 2D Player Tracking Replay Demo"
+          >
+            <PlayCircle size={18} color="#00ff87" /> Replay demo
+          </Link>
+          <Link 
+            to={paths.tactics()}
+            className={`nav-tab-btn ${activeTab === 'tactics' ? 'active' : ''}`}
+            style={{ textDecoration: 'none' }}
+            title="Both Teams on One Pitch Tactics Board"
+          >
+            <ClipboardList size={18} color="#00f2fe" /> Tactics board
+          </Link>
         </div>
 
         <div className="header-action-group">
@@ -169,4 +192,3 @@ export default function Header({ liveCount = 0, totalCount = 0 }) {
     </header>
   );
 }
-

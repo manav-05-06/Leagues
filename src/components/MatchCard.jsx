@@ -1,7 +1,9 @@
+import { Link } from 'react-router-dom';
 import { Trophy, Radio, Clock, CheckCircle2, Star } from 'lucide-react';
 import { useAppStore } from '../store';
 import TeamLogo from './TeamLogo';
 import { formatKickoff } from '../api';
+import { paths } from '../routes.js';
 
 export default function MatchCard({ match, onClick, onTeamClick }) {
   const favorites = useAppStore((state) => state.favorites);
@@ -34,16 +36,12 @@ export default function MatchCard({ match, onClick, onTeamClick }) {
   const goalEvents = (match.details || []).filter(d => d.scoringPlay);
 
   return (
-    <div 
+    <Link 
+      to={paths.match(match)}
       className={`match-card ${isLive ? 'is-live' : ''}`} 
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick?.();
-        }
+      style={{ textDecoration: 'none', color: 'inherit' }}
+      onClick={() => {
+        onClick?.(match);
       }}
     >
       <div className="match-header">
@@ -60,10 +58,12 @@ export default function MatchCard({ match, onClick, onTeamClick }) {
           <span>{match.league}</span>
           
           <button 
+            type="button"
             className="favorite-btn"
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             aria-pressed={isFavorite}
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               toggleFavorite(match.id);
             }}
@@ -87,6 +87,7 @@ export default function MatchCard({ match, onClick, onTeamClick }) {
           className={`team ${onTeamClick ? 'clickable-team' : ''}`}
           onClick={(e) => {
             if (onTeamClick && match.homeTeam?.name) {
+              e.preventDefault();
               e.stopPropagation();
               onTeamClick(match.homeTeam.name);
             }
@@ -127,6 +128,7 @@ export default function MatchCard({ match, onClick, onTeamClick }) {
           className={`team ${onTeamClick ? 'clickable-team' : ''}`}
           onClick={(e) => {
             if (onTeamClick && match.awayTeam?.name) {
+              e.preventDefault();
               e.stopPropagation();
               onTeamClick(match.awayTeam.name);
             }
@@ -149,7 +151,6 @@ export default function MatchCard({ match, onClick, onTeamClick }) {
           <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>STATS &gt;</span>
         </div>
       )}
-    </div>
+    </Link>
   );
 }
-

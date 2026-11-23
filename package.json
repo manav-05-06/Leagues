@@ -11,10 +11,13 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
+    "@vercel/og": "0.11.1",
+    "d3-delaunay": "^6.0.6",
     "lucide-react": "^1.38.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.18.6",
     "recharts": "^3.10.1",
     "zustand": "^5.0.15"
   },
@@ -29,5 +32,8 @@
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.11.0",
     "vite": "^5.4.10"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
