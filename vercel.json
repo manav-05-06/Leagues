@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/seo/page.js": { "includeFiles": "dist/index.html", "maxDuration": 10 },
-    "api/seo/og.jsx": { "includeFiles": "api/seo/fonts/**", "maxDuration": 10 },
+    "api/seo/og.js": { "includeFiles": "api/seo/fonts/**", "maxDuration": 10 },
     "api/seo/sitemap.js": { "maxDuration": 30 }
   },
   "rewrites": [
