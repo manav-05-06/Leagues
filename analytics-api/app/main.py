@@ -37,6 +37,7 @@ app.include_router(replay.router)
 app.include_router(admin.router)
 
 
-@app.get("/health")
+# HEAD is allowed too: uptime monitors (e.g. UptimeRobot free) check with HEAD.
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     return {"status": "ok"}
