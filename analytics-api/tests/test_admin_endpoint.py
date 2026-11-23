@@ -44,10 +44,14 @@ def test_admin_refresh_success():
     orig_token = settings.admin_token
     try:
         settings.admin_token = "secure-test-token"
-        res = client.post("/admin/refresh", headers={"X-Admin-Token": "secure-test-token"})
+        # TestClient runs background tasks for real. Replace the job so the test
+        # doesn't call ESPN or rewrite artifacts/ and data/results.db.
+        with patch("app.routers.admin._sync_refresh") as mock_refresh:
+            res = client.post("/admin/refresh", headers={"X-Admin-Token": "secure-test-token"})
         assert res.status_code == 200
         data = res.json()
         assert data["status"] == "refresh_scheduled"
+        mock_refresh.assert_called_once()
     finally:
         settings.admin_token = orig_token
 
