@@ -1,0 +1,70 @@
+# Runs on every push and pull request. A red ✗ means: don't merge.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel an older run on the same branch when a newer commit arrives.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend (lint, SEO tests, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Build first: the server-page tests read dist/index.html.
+      - name: Build
+        run: npm run build
+
+      - name: SEO tests
+        run: npm test
+
+  backend:
+    name: Backend (ruff, pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: analytics-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.9" # same uv as the Dockerfile
+          enable-cache: true
+          cache-dependency-glob: analytics-api/uv.lock
+
+      - name: Install
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check app tests
+
+      - name: Tests
+        run: uv run pytest -q
+
+      # Tests must never rewrite the committed model files or results database.
+      - name: Check tests left data files untouched
+        run: git diff --exit-code -- artifacts data
