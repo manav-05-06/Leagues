@@ -683,3 +683,31 @@ export async function fetchMatchLineups(eventId) {
     away: parseSide(awayComp),
   };
 }
+
+export async function fetchFullTeamDetails(teamId) {
+  if (!teamId) return null;
+  const teamUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/all/teams/${teamId}`;
+  const teamRes = await fetch(teamUrl);
+  if (!teamRes.ok) return null;
+  const teamData = await teamRes.json();
+  const rawTeam = teamData.team || teamData;
+
+  const leagueSlug = rawTeam.defaultLeague?.slug || 'eng.1';
+  const schedUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueSlug}/teams/${teamId}/schedule`;
+  const [schedRes, fixRes, squad] = await Promise.all([
+    fetch(schedUrl).catch(() => null),
+    fetch(`${schedUrl}?fixture=true`).catch(() => null),
+    fetchTeamSquad(leagueSlug, teamId).catch(() => []),
+  ]);
+
+  const schedData = schedRes && schedRes.ok ? await schedRes.json() : { events: [] };
+  const fixData = fixRes && fixRes.ok ? await fixRes.json() : { events: [] };
+
+  const allEvents = [...(schedData.events || []), ...(fixData.events || [])];
+  return {
+    team: rawTeam,
+    leagueSlug,
+    schedule: { events: allEvents },
+    squad,
+  };
+}

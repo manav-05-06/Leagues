@@ -31,3 +31,8 @@ analytics-api/.ruff_cache
 __pycache__
 *.pyc
 
+# Local environment and Vercel link
+.env
+.env.*
+!.env.example
+.vercel

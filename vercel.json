@@ -1,8 +1,23 @@
 {
+  "functions": {
+    "api/seo/page.js": { "includeFiles": "dist/index.html", "maxDuration": 10 },
+    "api/seo/og.jsx": { "includeFiles": "api/seo/fonts/**", "maxDuration": 10 },
+    "api/seo/sitemap.js": { "maxDuration": 30 }
+  },
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/robots.txt", "destination": "/api/seo/robots" },
+    { "source": "/sitemap.xml", "destination": "/api/seo/sitemap?file=index" },
+    { "source": "/sitemaps/:file", "destination": "/api/seo/sitemap?file=:file" },
+    { "source": "/og/:kind/:file", "destination": "/api/seo/og?kind=:kind&file=:file" },
+    { "source": "/match/:id", "destination": "/api/seo/page?kind=match&id=:id" },
+    { "source": "/match/:id/:slug", "destination": "/api/seo/page?kind=match&id=:id&slug=:slug" },
+    { "source": "/team/:id", "destination": "/api/seo/page?kind=team&id=:id" },
+    { "source": "/team/:id/:slug", "destination": "/api/seo/page?kind=team&id=:id&slug=:slug" },
+    { "source": "/league/:name", "destination": "/api/seo/page?kind=league&name=:name" },
+    { "source": "/league/:name/table", "destination": "/api/seo/page?kind=table&name=:name" },
+    { "source": "/tactics", "destination": "/api/seo/page?kind=static&page=tactics" },
+    { "source": "/replay", "destination": "/api/seo/page?kind=static&page=replay" },
+    { "source": "/about", "destination": "/api/seo/page?kind=static&page=about" },
+    { "source": "/((?!api/|assets/).*)", "destination": "/api/seo/page?kind=notfound" }
   ]
 }
