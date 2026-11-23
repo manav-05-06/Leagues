@@ -37,7 +37,7 @@ export default [
     },
   },
   {
-    files: ['api/**/*.{js,jsx}', 'src/**/*.test.js'],
+    files: ['api/**/*.{js,jsx}', 'src/**/*.test.js', 'vite.config.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: {
