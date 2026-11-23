@@ -1,24 +1,24 @@
 {
   "league": "eng.1",
-  "test_matches": 1076,
+  "test_matches": 1085,
   "shrink_k": 0.26,
   "base_rates": {
-    "home": 0.4402,
-    "draw": 0.2445,
-    "away": 0.3152
+    "home": 0.441,
+    "draw": 0.2451,
+    "away": 0.314
   },
-  "hit_rate": 0.4963,
-  "always_home_hit_rate": 0.4247,
+  "hit_rate": 0.4968,
+  "always_home_hit_rate": 0.4258,
   "dixon_coles": {
-    "rps": 0.2125,
-    "brier": 0.2055,
-    "log_loss": 1.0295
+    "rps": 0.2124,
+    "brier": 0.2056,
+    "log_loss": 1.03
   },
   "baselines": {
     "league_base_rate": {
-      "rps": 0.2331,
-      "brier": 0.2191,
-      "log_loss": 1.0845,
+      "rps": 0.2327,
+      "brier": 0.219,
+      "log_loss": 1.0842,
       "rates": {
         "home": 0.484,
         "draw": 0.216,
@@ -26,7 +26,7 @@
       }
     },
     "uniform": {
-      "rps": 0.2353
+      "rps": 0.2352
     }
   },
   "rps_beats_base_rate": true,
@@ -41,24 +41,24 @@
     },
     {
       "bin": "20-40%",
-      "count": 363,
+      "count": 360,
       "predicted": 0.324,
-      "observed": 0.273,
+      "observed": 0.272,
       "error": -0.052
     },
     {
       "bin": "40-60%",
-      "count": 493,
-      "predicted": 0.496,
-      "observed": 0.45,
-      "error": -0.045
+      "count": 502,
+      "predicted": 0.495,
+      "observed": 0.452,
+      "error": -0.043
     },
     {
       "bin": "60-80%",
-      "count": 211,
+      "count": 214,
       "predicted": 0.666,
-      "observed": 0.635,
-      "error": -0.031
+      "observed": 0.631,
+      "error": -0.035
     },
     {
       "bin": "80-100%",

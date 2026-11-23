@@ -1,0 +1,24 @@
+# Render Blueprint for the match analytics API (analytics-api/).
+# In Render: New → Blueprint → pick this repo. Render builds the Dockerfile.
+services:
+  - type: web
+    name: leagues-analytics-api
+    runtime: docker
+    plan: free
+    rootDir: analytics-api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Sites allowed to call the API (comma-separated, no trailing slash),
+      # e.g. https://leagues-fb.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # Optional: regex for preview deploys,
+      # e.g. https://leagues-fb(-[a-z0-9-]+)?\.vercel\.app
+      - key: ALLOWED_ORIGIN_REGEX
+        sync: false
+      # Optional: enables POST /admin/refresh. Leave empty to keep it disabled.
+      - key: ADMIN_TOKEN
+        sync: false

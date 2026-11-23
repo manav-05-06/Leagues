@@ -1,0 +1,12 @@
+# Keep the image small: only app/, training/, artifacts/, data/replay/ and
+# data/results.db are copied by the Dockerfile.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+tests/
+data/raw/
+*.log
+.env
+.env.*

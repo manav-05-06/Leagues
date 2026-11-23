@@ -1,25 +1,25 @@
 {
   "eng.1": {
     "league": "eng.1",
-    "test_matches": 1076,
+    "test_matches": 1085,
     "shrink_k": 0.26,
     "base_rates": {
-      "home": 0.4402,
-      "draw": 0.2445,
-      "away": 0.3152
+      "home": 0.441,
+      "draw": 0.2451,
+      "away": 0.314
     },
-    "hit_rate": 0.4963,
-    "always_home_hit_rate": 0.4247,
+    "hit_rate": 0.4968,
+    "always_home_hit_rate": 0.4258,
     "dixon_coles": {
-      "rps": 0.2125,
-      "brier": 0.2055,
-      "log_loss": 1.0295
+      "rps": 0.2124,
+      "brier": 0.2056,
+      "log_loss": 1.03
     },
     "baselines": {
       "league_base_rate": {
-        "rps": 0.2331,
-        "brier": 0.2191,
-        "log_loss": 1.0845,
+        "rps": 0.2327,
+        "brier": 0.219,
+        "log_loss": 1.0842,
         "rates": {
           "home": 0.484,
           "draw": 0.216,
@@ -27,7 +27,7 @@
         }
       },
       "uniform": {
-        "rps": 0.2353
+        "rps": 0.2352
       }
     },
     "rps_beats_base_rate": true,
@@ -42,24 +42,24 @@
       },
       {
         "bin": "20-40%",
-        "count": 363,
+        "count": 360,
         "predicted": 0.324,
-        "observed": 0.273,
+        "observed": 0.272,
         "error": -0.052
       },
       {
         "bin": "40-60%",
-        "count": 493,
-        "predicted": 0.496,
-        "observed": 0.45,
-        "error": -0.045
+        "count": 502,
+        "predicted": 0.495,
+        "observed": 0.452,
+        "error": -0.043
       },
       {
         "bin": "60-80%",
-        "count": 211,
+        "count": 214,
         "predicted": 0.666,
-        "observed": 0.635,
-        "error": -0.031
+        "observed": 0.631,
+        "error": -0.035
       },
       {
         "bin": "80-100%",
@@ -72,25 +72,25 @@
   },
   "esp.1": {
     "league": "esp.1",
-    "test_matches": 1104,
-    "shrink_k": 0.04,
+    "test_matches": 1113,
+    "shrink_k": 0.05,
     "base_rates": {
-      "home": 0.4643,
-      "draw": 0.2554,
-      "away": 0.2803
+      "home": 0.4648,
+      "draw": 0.2545,
+      "away": 0.2806
     },
-    "hit_rate": 0.5072,
-    "always_home_hit_rate": 0.4574,
+    "hit_rate": 0.504,
+    "always_home_hit_rate": 0.4582,
     "dixon_coles": {
-      "rps": 0.203,
+      "rps": 0.2033,
       "brier": 0.1977,
-      "log_loss": 0.9959
+      "log_loss": 0.996
     },
     "baselines": {
       "league_base_rate": {
-        "rps": 0.2274,
-        "brier": 0.2149,
-        "log_loss": 1.067,
+        "rps": 0.2275,
+        "brier": 0.2148,
+        "log_loss": 1.0665,
         "rates": {
           "home": 0.484,
           "draw": 0.258,
@@ -98,7 +98,7 @@
         }
       },
       "uniform": {
-        "rps": 0.2354
+        "rps": 0.2355
       }
     },
     "rps_beats_base_rate": true,
@@ -106,62 +106,62 @@
     "calibration": [
       {
         "bin": "0-20%",
-        "count": 72,
+        "count": 66,
         "predicted": 0.172,
-        "observed": 0.167,
-        "error": -0.005
+        "observed": 0.182,
+        "error": 0.009
       },
       {
         "bin": "20-40%",
-        "count": 343,
-        "predicted": 0.318,
-        "observed": 0.327,
+        "count": 353,
+        "predicted": 0.317,
+        "observed": 0.326,
         "error": 0.009
       },
       {
         "bin": "40-60%",
-        "count": 457,
+        "count": 459,
         "predicted": 0.484,
-        "observed": 0.466,
-        "error": -0.018
+        "observed": 0.464,
+        "error": -0.02
       },
       {
         "bin": "60-80%",
-        "count": 219,
-        "predicted": 0.686,
+        "count": 223,
+        "predicted": 0.685,
         "observed": 0.717,
-        "error": 0.031
+        "error": 0.033
       },
       {
         "bin": "80-100%",
-        "count": 13,
-        "predicted": 0.829,
-        "observed": 0.846,
-        "error": 0.017
+        "count": 12,
+        "predicted": 0.828,
+        "observed": 0.833,
+        "error": 0.005
       }
     ]
   },
   "ger.1": {
     "league": "ger.1",
-    "test_matches": 790,
+    "test_matches": 799,
     "shrink_k": 0.07,
     "base_rates": {
-      "home": 0.435,
-      "draw": 0.2513,
-      "away": 0.3137
+      "home": 0.4351,
+      "draw": 0.2511,
+      "away": 0.3138
     },
-    "hit_rate": 0.5,
-    "always_home_hit_rate": 0.4228,
+    "hit_rate": 0.5019,
+    "always_home_hit_rate": 0.423,
     "dixon_coles": {
-      "rps": 0.21,
-      "brier": 0.2001,
-      "log_loss": 1.0066
+      "rps": 0.2101,
+      "brier": 0.2002,
+      "log_loss": 1.0069
     },
     "baselines": {
       "league_base_rate": {
         "rps": 0.236,
-        "brier": 0.2189,
-        "log_loss": 1.0837,
+        "brier": 0.2188,
+        "log_loss": 1.0836,
         "rates": {
           "home": 0.461,
           "draw": 0.268,
@@ -184,24 +184,24 @@
       },
       {
         "bin": "20-40%",
-        "count": 228,
+        "count": 232,
         "predicted": 0.312,
-        "observed": 0.268,
+        "observed": 0.267,
         "error": -0.045
       },
       {
         "bin": "40-60%",
-        "count": 375,
-        "predicted": 0.492,
-        "observed": 0.424,
-        "error": -0.068
+        "count": 378,
+        "predicted": 0.493,
+        "observed": 0.426,
+        "error": -0.067
       },
       {
         "bin": "60-80%",
-        "count": 147,
-        "predicted": 0.695,
-        "observed": 0.721,
-        "error": 0.026
+        "count": 149,
+        "predicted": 0.696,
+        "observed": 0.718,
+        "error": 0.022
       },
       {
         "bin": "80-100%",
@@ -214,25 +214,25 @@
   },
   "ita.1": {
     "league": "ita.1",
-    "test_matches": 1101,
+    "test_matches": 1110,
     "shrink_k": 0.0,
     "base_rates": {
-      "home": 0.4072,
-      "draw": 0.2714,
-      "away": 0.3214
+      "home": 0.4081,
+      "draw": 0.2711,
+      "away": 0.3208
     },
-    "hit_rate": 0.5114,
-    "always_home_hit_rate": 0.4033,
+    "hit_rate": 0.5126,
+    "always_home_hit_rate": 0.4045,
     "dixon_coles": {
-      "rps": 0.2019,
-      "brier": 0.1994,
-      "log_loss": 0.9998
+      "rps": 0.2016,
+      "brier": 0.1992,
+      "log_loss": 0.9989
     },
     "baselines": {
       "league_base_rate": {
         "rps": 0.2309,
-        "brier": 0.2195,
-        "log_loss": 1.0865,
+        "brier": 0.2194,
+        "log_loss": 1.0861,
         "rates": {
           "home": 0.418,
           "draw": 0.279,
@@ -248,31 +248,31 @@
     "calibration": [
       {
         "bin": "0-20%",
-        "count": 119,
+        "count": 120,
         "predicted": 0.161,
-        "observed": 0.118,
-        "error": -0.043
+        "observed": 0.117,
+        "error": -0.045
       },
       {
         "bin": "20-40%",
-        "count": 389,
+        "count": 390,
         "predicted": 0.301,
-        "observed": 0.288,
-        "error": -0.013
+        "observed": 0.287,
+        "error": -0.014
       },
       {
         "bin": "40-60%",
-        "count": 396,
-        "predicted": 0.483,
-        "observed": 0.472,
-        "error": -0.011
+        "count": 401,
+        "predicted": 0.484,
+        "observed": 0.476,
+        "error": -0.008
       },
       {
         "bin": "60-80%",
-        "count": 183,
+        "count": 185,
         "predicted": 0.668,
-        "observed": 0.656,
-        "error": -0.012
+        "observed": 0.654,
+        "error": -0.013
       },
       {
         "bin": "80-100%",
@@ -285,25 +285,25 @@
   },
   "fra.1": {
     "league": "fra.1",
-    "test_matches": 848,
-    "shrink_k": 0.29,
+    "test_matches": 857,
+    "shrink_k": 0.3,
     "base_rates": {
-      "home": 0.4406,
-      "draw": 0.2345,
-      "away": 0.3249
+      "home": 0.439,
+      "draw": 0.2352,
+      "away": 0.3258
     },
-    "hit_rate": 0.5153,
-    "always_home_hit_rate": 0.4458,
+    "hit_rate": 0.5123,
+    "always_home_hit_rate": 0.4434,
     "dixon_coles": {
-      "rps": 0.2177,
-      "brier": 0.2037,
-      "log_loss": 1.0201
+      "rps": 0.2183,
+      "brier": 0.2043,
+      "log_loss": 1.0225
     },
     "baselines": {
       "league_base_rate": {
-        "rps": 0.2341,
-        "brier": 0.2146,
-        "log_loss": 1.0641,
+        "rps": 0.2342,
+        "brier": 0.2148,
+        "log_loss": 1.065,
         "rates": {
           "home": 0.429,
           "draw": 0.255,
@@ -311,7 +311,7 @@
         }
       },
       "uniform": {
-        "rps": 0.2402
+        "rps": 0.24
       }
     },
     "rps_beats_base_rate": true,
@@ -319,31 +319,31 @@
     "calibration": [
       {
         "bin": "0-20%",
-        "count": 13,
-        "predicted": 0.19,
-        "observed": 0.077,
-        "error": -0.113
+        "count": 11,
+        "predicted": 0.191,
+        "observed": 0.0,
+        "error": -0.191
       },
       {
         "bin": "20-40%",
-        "count": 364,
-        "predicted": 0.323,
+        "count": 370,
+        "predicted": 0.324,
         "observed": 0.324,
         "error": 0.001
       },
       {
         "bin": "40-60%",
-        "count": 392,
+        "count": 398,
         "predicted": 0.49,
-        "observed": 0.536,
-        "error": 0.045
+        "observed": 0.533,
+        "error": 0.042
       },
       {
         "bin": "60-80%",
-        "count": 79,
-        "predicted": 0.65,
-        "observed": 0.62,
-        "error": -0.03
+        "count": 78,
+        "predicted": 0.647,
+        "observed": 0.615,
+        "error": -0.032
       }
     ]
   }
